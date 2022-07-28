@@ -1,5 +1,5 @@
 # Project exclude paths
-/dist/
+
 /node_modules/
 /src/utils/classes.js
 /src/utils/classes.js.map

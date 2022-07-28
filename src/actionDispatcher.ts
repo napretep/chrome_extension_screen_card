@@ -88,7 +88,7 @@ function ActionEmitter_AtShadowRoot_mousemove(e:MouseEvent & DomEvent) {
     }
     else{
         Dispatch(E.EVENT_FRAME_OUT_BUTTON)
-        
+
     }
 }
 function ActionEmitter_AtShadowRoot_mouseup(e:MouseEvent & DomEvent){
