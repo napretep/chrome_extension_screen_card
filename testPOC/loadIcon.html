@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style>
+    .bar{
+        left:50%;
+        top:50%;
+        position:absolute;
+        display:grid;
+        grid-template-rows: 40px;
+        grid-template-columns: 40px auto repeat(4,40px);
+        background-color: #34adff;
+        opacity:0.8 ;
+    }
+    .save{
+        background-image: url(../dist/assets/save.png) ;
+
+    }
+    .close{
+        background-image: url(../dist/assets/delete.png) ;
+    }
+    .fixed{
+        background-image: url(../dist/assets/Fixed.png) ;
+    }
+    .fixed:after{
+
+    }
+    .minimize{
+        background-image: url(../dist/assets/Minimize.png) ;
+    }
+    .shrink{
+        background-image: url(../dist/assets/right.png) ;
+    }
+    .icon{
+        background-size:100% 100%;
+        background-repeat:no-repeat;
+
+    }
+    .title{
+        color: #ffffff;
+    }
+    .bar > div {
+        transition:all 200ms;
+        box-shadow: 2px 2px 2px #959595;
+        border-radius: 4px;
+        padding:5px;
+
+    }
+    .bar > div:hover{
+        box-shadow: 4px 4px 4px #494949;
+    }
+</style>
+<body>
+
+<div class="bar">
+    <div class="save  icon"></div>
+    <div class="title"><p>123213</p></div>
+    <div class="close icon"></div>
+    <div class="fixed icon"></div>
+    <div class="minimize icon"></div>
+    <div class="shrink icon"></div>
+
+</div>
+</body>
+</html>
