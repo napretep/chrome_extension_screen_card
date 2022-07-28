@@ -83,13 +83,13 @@ function ActionEmitter_AtShadowRoot_mousedown(e:MouseEvent & DomEvent){
     }
 }
 function ActionEmitter_AtShadowRoot_mousemove(e:MouseEvent & DomEvent) {
-    if (TargetIs.tempframeHeaderButtons(e.target) || TargetIs.tempframeFooterButtons(e.target)){
-        Dispatch(E.EVENT_FRAME_AT_BUTTON)
-    }
-    else{
-        Dispatch(E.EVENT_FRAME_OUT_BUTTON)
-
-    }
+    // if (TargetIs.tempframeHeaderButtons(e.target) || TargetIs.tempframeFooterButtons(e.target)){
+    //     Dispatch(E.EVENT_FRAME_AT_BUTTON)
+    // }
+    // else{
+    //     Dispatch(E.EVENT_FRAME_OUT_BUTTON)
+    //
+    // }
 }
 function ActionEmitter_AtShadowRoot_mouseup(e:MouseEvent & DomEvent){
 }

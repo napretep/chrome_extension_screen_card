@@ -74,12 +74,13 @@ function ActionEmitter_AtShadowRoot_mousedown(e) {
     }
 }
 function ActionEmitter_AtShadowRoot_mousemove(e) {
-    if (funcTools_1.TargetIs.tempframeHeaderButtons(e.target) || funcTools_1.TargetIs.tempframeFooterButtons(e.target)) {
-        (0, funcTools_1.Dispatch)(E.EVENT_FRAME_AT_BUTTON);
-    }
-    else {
-        (0, funcTools_1.Dispatch)(E.EVENT_FRAME_OUT_BUTTON);
-    }
+    // if (TargetIs.tempframeHeaderButtons(e.target) || TargetIs.tempframeFooterButtons(e.target)){
+    //     Dispatch(E.EVENT_FRAME_AT_BUTTON)
+    // }
+    // else{
+    //     Dispatch(E.EVENT_FRAME_OUT_BUTTON)
+    //
+    // }
 }
 function ActionEmitter_AtShadowRoot_mouseup(e) {
 }
