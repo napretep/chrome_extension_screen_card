@@ -15,7 +15,7 @@ import {
     EVENT_MOUSE_LBTN_PRESSED,
     EVENT_MOUSE_LBTN_RELEASED,
     EVENT_FRAME_TOGGLE_FOLDBODY,
-    EVENT_FRAME_TOGGLE_MINIMIZE, EVENT_FRAME_TOGGLE_TOOLS, EVENT_FRAME_TOGGLE_PINE, EVENT_FRAME_SAVE_AS, EVENT_FRAME_MOVE_BEGIN, EVENT_FRAME_MOVE_END
+    EVENT_FRAME_TOGGLE_MINIMIZE, EVENT_FRAME_TOGGLE_TOOLS, EVENT_FRAME_TOGGLE_PINE, EVENT_FRAME_SAVE_AS, EVENT_FRAME_MOVE_BEGIN, EVENT_FRAME_MOVE_END, EVENT_FRAME_MOUSE_HOVER
 } from "./utils/events"
 import {EE, IEventEmitter, newEE, EventEmitter, GenEELi, DomEvent, UserAction} from "./utils/interfaces"
 import {consolelog, Dispatch, HasClass, InstallEvent, shadowEl, TargetIs, UninstallEvent} from "./utils/funcTools"
@@ -83,16 +83,28 @@ let tempframe = {
     },
     resize: {
         trigger: (e: MouseEvent & DomEvent) => {
-
+            let ST = S.TEMPFRAME
+            if(!ST.HASGROUP(ST.Groups.MOVE)&&!ST.SOME(ST.RESIZE_BEGIN,ST.RESIZE_DOING)){
+                Dispatch(EVENT_FRAME_MOUSE_HOVER,e)
+            }
         },
         begin: (e: MouseEvent & DomEvent) => {
-
+            let ST=S.TEMPFRAME
+            if(ST.ONLYGROUP(ST.Groups.RESIZE)
+                &&ST.ALL(ST.RESIZE_TRIGGERED)){
+                Dispatch(EVENT_FRAME_RESIZE_BEGIN,e)
+            }
         },
         ing: (e: MouseEvent & DomEvent) => {
-
+            let ST=S.TEMPFRAME
+            if(ST.ONLYGROUP(ST.Groups.RESIZE)&&ST.ALL(ST.RESIZE_BEGIN)){
+                Dispatch(EVENT_FRAME_RESIZING,e)
+            }
         },
         end: (e: MouseEvent & DomEvent) => {
-
+            let ST=S.TEMPFRAME
+            if(ST.ONLYGROUP(ST.Groups.RESIZE))
+                Dispatch(EVENT_FRAME_RESIZE_END)
         }
     },
     click: {

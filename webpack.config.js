@@ -10,4 +10,5 @@ module.exports = {
         filename: "[name].js"
     },
     devtool: "source-map",
+
 }

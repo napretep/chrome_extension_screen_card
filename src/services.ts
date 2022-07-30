@@ -1,6 +1,6 @@
 import {DomEvent, EE, GenEELi, ICSSProp, ICustomElementEvent, ICustomEvent, ICustomMouseEvent, ICustomRectEvent, IEventEmitter, IRect, IService, newEE} from "./utils/interfaces";
 import {AppendMaskToBody, consolelog, Dispatch, HideElementInShadowRoot, InstallEvent, RemoveMaskFromBody, ShowElementInShadowRoot, UninstallEvent,} from "./utils/funcTools";
-import {CSSClass, TempFrameHeaderHeight} from "./utils/constants";
+import {BTN_Red, CSSClass, TempFrameHeaderHeight} from "./utils/constants";
 import {CORE} from "./core";
 import {STATE as S} from "./state";
 import * as E from "./utils/events"
@@ -130,6 +130,7 @@ export class InfomationService {
 }
 
 export class TempFrameService implements IService {
+    bodyheight = null
     public cursorAt = {
         LT: "nw-resize",
         LB: "sw-resize",
@@ -244,16 +245,44 @@ export class TempFrameService implements IService {
 
     }
     public OnFoldBody = (e: HTMLElement) => {
+        let rect:IRect
         if (S.TEMPFRAME.HAS(S.TEMPFRAME.BTN_FOLDBODY)) {
-            this._TempFrame.UpdateGeometry({left: null, top: null, width: null, height: TempFrameHeaderHeight})
+            this.bodyheight = this.TempFrame.getBoundingClientRect().height
+            rect = {left: null, top: null, width: null, height: TempFrameHeaderHeight}
         }
+        else{
+            rect = {left: null, top: null, width: null, height: this.bodyheight}
+            this.bodyheight=null
+        }
+        this._TempFrame.UpdateGeometry(rect)
+
     }
     public OnOpenToolBox = () => {
+        let ST =S.TEMPFRAME
+        if(ST.HAS(ST.BTN_TOOLS)){
+            this._TempFrame.HideFooter()
+        }
+        else{
+            this._TempFrame.ShowFooter()
+        }
 
     }
     public OnPine = () => {
+        let btn:HTMLElement=this._TempFrame._container._header.buttonGroup[CSSClass.tempFrameHeaderButtons.fixed]
+        if(S.TEMPFRAME.HAS(S.TEMPFRAME.BTN_PINE)){
+            btn.style.backgroundColor= BTN_Red
+            this._TempFrame.Pine()
+            
+        }
+        else{
+
+            btn.style.backgroundColor=""
+            this._TempFrame.Pine()
+
+        }
     }
     public OnSave = () => {
+        
 
     }
 

@@ -65,12 +65,28 @@ var tempframe = {
     },
     resize: {
         trigger: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (!ST.HASGROUP(ST.Groups.MOVE) && !ST.SOME(ST.RESIZE_BEGIN, ST.RESIZE_DOING)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_MOUSE_HOVER, e);
+            }
         },
         begin: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.ONLYGROUP(ST.Groups.RESIZE)
+                && ST.ALL(ST.RESIZE_TRIGGERED)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_BEGIN, e);
+            }
         },
         ing: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.ONLYGROUP(ST.Groups.RESIZE) && ST.ALL(ST.RESIZE_BEGIN)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZING, e);
+            }
         },
         end: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.ONLYGROUP(ST.Groups.RESIZE))
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_END);
         }
     },
     click: {

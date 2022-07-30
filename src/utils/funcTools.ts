@@ -1,8 +1,6 @@
 import {assetsDir, CSSClass, extensionBaseName, ISDEBUG} from "./constants";
 import {IEventEmitter, ICSSProp, EventEmitter, Point2d, Style, InstalledEvent, ExtendEventName, IAddEventListner} from "./interfaces";
 import {CORE} from "../core"
-import * as EVENTS from "./events"
-import * as Events from "events";
 
 export function SetElemetCenter(element: HTMLElement, x: number, y: number) {
 
@@ -19,26 +17,6 @@ export function SwitchFixedToAbsolute(element: HTMLElement) {
 export function CursorAtEdge(element: HTMLElement, event: MouseEvent) {
     let top = element.getBoundingClientRect().top
 
-}
-
-export function AppendMaskToBody(zindex: number, styles: Partial<ICSSProp> = {}) {
-    consolelog("AppendMaskToBody 调用")
-    if (!CORE.ShadowRoot.querySelector("." + CSSClass.blockActionMask)) {
-        consolelog("AppendMaskToBody !CORE.ShadowRoot.querySelector(\".\"+CSSClass.blockActionMask)) 调用")
-        let blockActionMask = document.createElement("div");
-        blockActionMask.style.height = `${document.scrollingElement.scrollHeight}px`;
-        blockActionMask.classList.add(CSSClass.blockActionMask)
-        blockActionMask.style.zIndex = `${zindex}`;
-        for (let name in styles) {
-            blockActionMask.style[name] = styles[name]
-        }
-        CORE.ShadowRoot.appendChild(blockActionMask)
-    }
-}
-
-export function RemoveMaskFromBody() {
-    if (CORE.ShadowRoot.querySelector(`.${extensionBaseName}-masklayer`))
-        CORE.ShadowRoot.removeChild(document.querySelector(`.${extensionBaseName}-masklayer`))
 }
 
 export function MakeIconClass(IconNameList): {} {
@@ -136,13 +114,13 @@ export const TargetIs = {
     tempframeComponent: null,
     tempframeContainer: null,
     tempframeHeader: (target: HTMLElement) => {
-        return shadowEl("." + CSSClass.tempFrameHeader) == target
+        return shadowEl("." + CSSClass.tempFrameHeader) === target
     },
     tempFrameHeaderMoveBar: (target: HTMLElement) => {
         return target.classList.contains(CSSClass.tempFrameHeaderMoveBar)
     },
     tempframeHeaderButtons: (target: HTMLElement) => {
-        return TargetIs.tempframeHeader(target.parentElement.parentElement) && target.classList.contains(CSSClass.button)
+        return TargetIs.tempframeHeader(target?.parentElement?.parentElement||null) && target.classList.contains(CSSClass.button)
     },
     tempframeHeaderTitle: (target: HTMLElement) => {
         return TargetIs.tempframeHeader(target.parentElement) && target.classList.contains(CSSClass.tempFrameHeaderButtons.title)

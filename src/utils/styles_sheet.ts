@@ -80,7 +80,7 @@ left:50%;
 top:3px;
 width:30%;
 max-width:150px;
-height:50%;
+height:100%;
 max-height:20px;
 background-color:white;
 opacity: 0.5;
@@ -101,6 +101,7 @@ position:absolute;
 border-radius: 4px;
 box-shadow: 1px 1px 10px #000000b0;
 overflow:hidden;
+min-height:${TempFrameHeaderHeight}px;
 `
 styles_sheet.default[CSSClass.tempFrameHeader]=`
 display:grid;

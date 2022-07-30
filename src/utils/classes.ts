@@ -11,6 +11,7 @@ import {EE, IEventEmitter,IRect} from "./interfaces";
 import {STATE} from "../state";
 import {CORE} from "../core"
 import {keyBy} from "lodash";
+import {Component} from "../components"
 
 export  function Singleton<T>(){
     class Singleton{
@@ -252,6 +253,7 @@ class TempFrameBaseElement{
 
 class TempFrameHeader extends TempFrameBaseElement{
     public height:number = 24
+    public buttonGroup:ButtonGroup={}
     public children={
         left:document.createElement("div"),
         center: document.createElement("div"),
@@ -287,6 +289,7 @@ class TempFrameHeader extends TempFrameBaseElement{
                     console.log( chrome.runtime.getURL(`assets/${btnName}.png`))
                     div.classList.add(CSSClass.button)
                 el.appendChild(div)
+                this.buttonGroup[btnName]=div
             }
         )
         el.classList.add(CSSClass.tempFrameHeaderSide)
@@ -348,9 +351,42 @@ export class TempFrameContainer extends TempFrameBaseElement{
     public get footerHeight(){
         return this.footer.getBoundingClientRect().height
     }
+    public set footerHeight(value){
+        this.footer.style.height=`${value}px`
+    }
     public UpdateFrame=(value:HTMLElement)=>{
 
     }
 }
 
+abstract class BasicContainer{
+    public element:HTMLElement = document.createElement("div")
+    public abstract InitStyle():void
+    public AddClass=(...classes:string[]):void=>{
+        this.element.classList.add(...classes)
+    }
+    public DelClass=(...classes:string[]):void=>{
+        this.element.classList.remove(...classes)
+    }
+    
+}
+export class MinimizedContainer extends BasicContainer{
+    public InitStyle(): void {
+        throw new Error("Method not implemented.");
+    }
+ 
+    
+}
+// export class MinimizedFrame extends BasicProperties {
+//     public _source:Component
+//     public set source(value:Component){
+//         this._source=value
+//     }
+//     public get source(){
+//         return this._source
+//     }
+//     public InitStyle=()=>{
+        
+//     } 
 
+// }

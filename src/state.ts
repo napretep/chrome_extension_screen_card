@@ -1,7 +1,14 @@
 import {consolelog, InstallEvent} from "./utils/funcTools";
-import {ConflictFlag, IService, IState,} from "./utils/interfaces";
+// import {ConflictFlag, IService, IState,} from "./utils/interfaces";
 import {Singleton} from "./utils/classes"
 
+export interface IState{
+    STATE:Set<string>
+    EMPTY:number
+}
+
+
+export type ConflictFlag=Set<string>[]
 
 /**
  * {STATE}是状态, 用集合存储各类flag, 从而显示出不同的状态.
@@ -44,14 +51,18 @@ abstract class StateItem implements IState {
     public ADD = (...B: string[]) => {
         B.forEach((value) => {
             let group = value.split("_")[0]
-            this.RemoveGroup(group)
+            this.RemoveConflict(group)
             this.STATE.add(value)
         })
 
         console.log(this.constructor.name + " " +
             B.toString() + ">>>added>>>" + this.toString())
     }
-
+    public SWITCH=(...B:string[])=>{
+        B.forEach((val)=>{
+            !this.HAS(val)?this.ADD(val):this.DEL(val)
+        })
+    }
     public DEL = (...B: string[]) => {
         B.forEach((value) => this.STATE.delete(value))
 
@@ -87,13 +98,21 @@ abstract class StateItem implements IState {
     }
 
 
+
+
     /**
-     * NOGROUP 即状态中 没有 B类flag
+     * NOGROUP 即状态中 没有 B类flag,
+     * 如果 B为null, 则状态中全部类型flag都无
      * */
-    public NOGROUP = (B: string) => {
-        return !this.toArray().some((s) => {
+    public NOGROUP = (B: string=null) => {
+        if (B) return !this.toArray().some((s:string) => {
             s.startsWith(B)
         })
+        else{
+            return !Object.keys(this.Groups).some((s:string)=>{
+                return this.HASGROUP(s)
+            })
+        }
     }
     /**
      *     ONLYGROUP的意思是 在GroupNames中 B类flag是当前状态唯一存在的
@@ -122,17 +141,29 @@ abstract class StateItem implements IState {
                 return next.has(groupname) ? next : result
             }, new Set<string>())
     }
+
     /**
      * 移除状态中所有 groupname类的flag
      * */
-    public RemoveGroup = (groupname: string, includeSelf = false) => {
-        this.getConlictSet(groupname)
-            .forEach((g_name) => {
-                this.STATE.forEach((s_flag) =>
-                    s_flag.startsWith(g_name) && (includeSelf ? groupname == g_name : !(groupname == g_name)) ?
+    public RemoveGroup = (groupname: string):void => {
+        this.STATE.forEach((s_flag) =>
+                    s_flag.startsWith(groupname) ?
                         this.DEL(s_flag)
                         : null)
-            })
+    }
+    /**
+     * 移除状态中所有与给定group相斥的group,
+     * */
+    public RemoveConflict=(groupname:string):void=>{
+        this.getConlictSet(groupname).forEach((name:string)=>{
+            if(name===groupname) return
+            else{
+                this.STATE.forEach((s_flag) =>
+                    s_flag.startsWith(name) ?
+                        this.DEL(s_flag)
+                        : null)
+            }
+        })
     }
 }
 
