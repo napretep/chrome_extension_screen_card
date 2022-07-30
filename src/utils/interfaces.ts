@@ -9,8 +9,20 @@ export interface IEventEmitter {
     Emitter:EventListenerOrEventListenerObject
 }
 
+export interface AnyFunc{
+    (key:any):void
+}
+
+export interface IAddEventListner{
+    (event:keyof ExtendEventName,listener:AnyFunc):void
+}
 export type EventEmitter = {
     [prop in keyof ExtendEventName]?: EventListenerOrEventListenerObject
+}
+
+export type UserAction ={
+    AtBody?:EventEmitter,
+    AtShadowRoot?:EventEmitter
 }
 
 export class EE implements IEventEmitter{
@@ -73,7 +85,7 @@ export interface IComponent{
 }
 
 export type InstalledEvent = {
-    [key:string]:Set<HTMLElement>
+    [key:string]:Set<{addEventListener:IAddEventListner}>
 }
 
 export interface ICSSProp {
@@ -95,8 +107,5 @@ export interface IState{
     EMPTY:number
 }
 
-// export interface IStateDrawing extends IState{
-//     STATE:0,
-//     EMPTY:0,
-//     TRIGGERD:1,
-// }
+
+export type ConflictFlag=Set<string>[]

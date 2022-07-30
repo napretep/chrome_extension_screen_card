@@ -1,120 +1,188 @@
+/**
+ * 这个文件用来处理用户行为事件的分发
+ * */
 import * as E from "./utils/events";
 import {
     EVENT_FRAME_DRAWING_TRIGGERED,
     EVENT_FRAME_DRAWING_FAIELD,
     EVENT_FRAME_DRAWING_SATRTED,
     EVENT_FRAME_DRAWING_MOVING,
-    EVENT_FRAME_DRAWING_STOPPED, EVENT_FRAME_MOVING, EVENT_FRAME_RESIZE_BEGIN, EVENT_FRAME_RESIZING, EVENT_FRAME_RESIZE_END
+    EVENT_FRAME_DRAWING_STOPPED,
+    EVENT_FRAME_MOVING,
+    EVENT_FRAME_RESIZE_BEGIN,
+    EVENT_FRAME_RESIZING,
+    EVENT_FRAME_RESIZE_END,
+    EVENT_MOUSE_LBTN_PRESSED,
+    EVENT_MOUSE_LBTN_RELEASED,
+    EVENT_FRAME_TOGGLE_FOLDBODY,
+    EVENT_FRAME_TOGGLE_MINIMIZE, EVENT_FRAME_TOGGLE_TOOLS, EVENT_FRAME_TOGGLE_PINE, EVENT_FRAME_SAVE_AS, EVENT_FRAME_MOVE_BEGIN, EVENT_FRAME_MOVE_END
 } from "./utils/events"
-import {EE, IEventEmitter, newEE, EventEmitter, GenEELi, DomEvent} from "./utils/interfaces"
-import {consolelog, Dispatch, InstallEvent, shadowEl, TargetIs, UninstallEvent} from "./utils/funcTools"
+import {EE, IEventEmitter, newEE, EventEmitter, GenEELi, DomEvent, UserAction} from "./utils/interfaces"
+import {consolelog, Dispatch, HasClass, InstallEvent, shadowEl, TargetIs, UninstallEvent} from "./utils/funcTools"
 import {STATE as S} from "./state"
 import {CORE} from "./core";
 import {CSSClass} from "./utils/constants";
-// let S = CORE.STATE
-function ActionEmitter_AtBody_keydown(e: KeyboardEvent) {
-    if(e.ctrlKey && e.altKey &&( e.key==="e"||e.key==="E")) {
-        if(!CORE.STATE.FRAME_DRAWING_TRIGGERED)
-            Dispatch(EVENT_FRAME_DRAWING_TRIGGERED)
-    }
-    if(e.code === "Escape"){
-        if(CORE.STATE.FRAME_DRAWING_TRIGGERED) {
-            Dispatch(EVENT_FRAME_DRAWING_STOPPED)
-            Dispatch(EVENT_FRAME_DRAWING_FAIELD)
+import * as Console from "console";
+
+let frameDrawing = {
+    triggered: (e: KeyboardEvent) => {
+
+        if (e.ctrlKey && e.altKey && (e.key === "e" || e.key === "E")) {
+            if (S.FRAME_DRAWING.NO(S.FRAME_DRAWING.TRIGGERED))
+                Dispatch(EVENT_FRAME_DRAWING_TRIGGERED)
         }
-    }
-}
-function ActionEmitter_AtBody_mousedown(e:MouseEvent & DomEvent){
-    let ST = S.TEMPFRAME
-    if(e.button==0) {
-        if (S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.TRIGGERD)) {
+    },
+    stop_failed: (e) => {
+        if (e.code === "Escape") {
+            if (S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.TRIGGERED)) {
+                Dispatch(EVENT_FRAME_DRAWING_STOPPED)
+                Dispatch(EVENT_FRAME_DRAWING_FAIELD)
+            }
+        }
+    },
+    start: (e: MouseEvent & DomEvent) => {
+        if (e.button == 0 && S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.TRIGGERED)) {
             Dispatch(EVENT_FRAME_DRAWING_SATRTED, e)
         }
-        else if (ST.ALL(ST.RESIZE_TRIGGERED) && ST.NO(ST.RESIZE_DOING,ST.RESIZE_BEGIN,ST.AT_BUTTON)
-            ){
-            Dispatch(EVENT_FRAME_RESIZE_BEGIN,e)//发送后, 会有DOING状态, 只会触发一次, 因为DOING状态会持续存在
+    },
+    moving: (e: MouseEvent & DomEvent) => {
+        if (S.MOUSE.LBTN_HOLDING && S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.STARTED)) {
+            Dispatch(EVENT_FRAME_DRAWING_MOVING, e)
+        }
+    },
+    stop: (e: MouseEvent & DomEvent) => {
+        if (S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.STARTED)) {
+            Dispatch(EVENT_FRAME_DRAWING_STOPPED, e)
         }
     }
 }
-function ActionEmitter_AtBody_mousemove(e:MouseEvent & DomEvent){
-    let ST = S.TEMPFRAME
-    if(e.button==0) {
-        if(S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.STARTED)){
-            Dispatch(EVENT_FRAME_DRAWING_MOVING,e)
-        }
-        else if (ST.HAS(ST.SHOW)&&ST.NO(ST.AT_BUTTON)) {
-            if (ST.HAS(ST.MOVING))Dispatch(E.EVENT_FRAME_MOVING, e)
-            else if (ST.NO(ST.RESIZE_BEGIN))
-            {
-                Dispatch(E.EVENT_FRAME_MOUSE_HOVER, e) //如果检测通过,会发射EVENT_FRAME_RESIZE_TRIGGERED
-            }
-            else if (ST.HAS(ST.RESIZE_BEGIN)){
-                Dispatch(EVENT_FRAME_RESIZING,e)
-            }
+let tempframe = {
 
-        }
-    }
-}
-function ActionEmitter_AtBody_mouseup(e:MouseEvent & DomEvent){
-    if(S.FRAME_DRAWING.HAS(S.FRAME_DRAWING.STARTED)){
-        Dispatch(EVENT_FRAME_DRAWING_STOPPED,e)
-    }
-    else if (S.TEMPFRAME.ALL(S.TEMPFRAME.SHOW,S.TEMPFRAME.MOVING)) {
-        Dispatch(E.EVENT_FRAME_MOVE_END)
-    }
-    else if (S.TEMPFRAME.ALL(S.TEMPFRAME.SHOW,S.TEMPFRAME.RESIZE_DOING)){
-        Dispatch(EVENT_FRAME_RESIZE_END)
-    }
-}
-
-function ActionEmitter_AtShadowRoot_mousedown(e:MouseEvent & DomEvent){
-
-    if(e.button==0){
-        if(S.TEMPFRAME.HAS(S.TEMPFRAME.SHOW)){
-                //开始移动 TEMPFRAME
-            if(e.target.classList.contains(CSSClass.tempFrameHeaderMoveBar)){
-                Dispatch(E.EVENT_FRAME_MOVE_BEGIN,e)
+    move: {// frame move
+        begin: (e: MouseEvent & DomEvent) => {//mouse down
+            let ST=S.TEMPFRAME
+            if (TargetIs.tempFrameHeaderMoveBar(e.target)
+                &&ST.NOGROUP(ST.Groups.MOVE)
+            ) {
+                Dispatch(EVENT_FRAME_MOVE_BEGIN, e)
             }
-            else if(TargetIs.tempframeHeaderButtons(e.target) && e.target.className.indexOf("close")>=0 ){
-                Dispatch(E.EVENT_FRAME_HIDE)
+        },
+        ing: (e: MouseEvent & DomEvent) => {//mouse move
+            let ST = S.TEMPFRAME
+            if (S.MOUSE.HAS(S.MOUSE.LBTN_HOLDING)
+                &&ST.ONLYGROUP(ST.Groups.MOVE)) {
+                Dispatch(EVENT_FRAME_MOVING, e)
             }
+        },
+        end: (e: MouseEvent & DomEvent) => {
+            let ST = S.TEMPFRAME
+            if (ST.ONLYGROUP(ST.Groups.MOVE)) {
+                Dispatch(EVENT_FRAME_MOVE_END)
+            }
+        },
+    },
+    resize: {
+        trigger: (e: MouseEvent & DomEvent) => {
+
+        },
+        begin: (e: MouseEvent & DomEvent) => {
+
+        },
+        ing: (e: MouseEvent & DomEvent) => {
+
+        },
+        end: (e: MouseEvent & DomEvent) => {
 
         }
+    },
+    click: {
+        buttonGroup: (e: MouseEvent & DomEvent) => {
+            if (!e.target) {
+                return
+            }
+            if (TargetIs.tempframeHeaderButtons(e.target) && S.TEMPFRAME.NO()) {
+                if (HasClass(e.target, "icon-close")) {
+                    Dispatch(E.EVENT_FRAME_HIDE)
+                } else if (HasClass(e.target, "icon-foldbody")) {
+                    Dispatch(E.EVENT_FRAME_TOGGLE_FOLDBODY)
+                } else if (HasClass(e.target, "icon-minimize")) {
+                    Dispatch(E.EVENT_FRAME_TOGGLE_MINIMIZE)
+                } else if (HasClass(e.target, "icon-toolbox")) {
+                    Dispatch(E.EVENT_FRAME_TOGGLE_TOOLS)
+                } else if (HasClass(e.target, "icon-fixed")) {
+                    Dispatch(E.EVENT_FRAME_TOGGLE_PINE)
+                } else if (HasClass(e.target, "icon-save")) {
+                    Dispatch(E.EVENT_FRAME_SAVE_AS)
+                }
+            }
+
+        }
+    }
+    ,
+    dbclick: {
+        setTitle: (e: MouseEvent & DomEvent) => {
+            if (TargetIs.tempframeHeaderTitle(e.target)) {
+                console.log("title")
+            } else if (TargetIs.tempFrameHeaderMoveBar(e.target)) {
+
+            }
+        }
     }
 }
-function ActionEmitter_AtShadowRoot_mousemove(e:MouseEvent & DomEvent) {
-    // if (TargetIs.tempframeHeaderButtons(e.target) || TargetIs.tempframeFooterButtons(e.target)){
-    //     Dispatch(E.EVENT_FRAME_AT_BUTTON)
-    // }
-    // else{
-    //     Dispatch(E.EVENT_FRAME_OUT_BUTTON)
-    //
-    // }
-}
-function ActionEmitter_AtShadowRoot_mouseup(e:MouseEvent & DomEvent){
-}
-let ActionSet_AtBody:EventEmitter= {
-    keydown: ActionEmitter_AtBody_keydown,
-    mousedown: ActionEmitter_AtBody_mousedown,
-    mousemove: ActionEmitter_AtBody_mousemove,
-    mouseup: ActionEmitter_AtBody_mouseup,
+export let ActionSet: UserAction = {
+    AtBody: {
+        keydown: (e: KeyboardEvent) => {
+            frameDrawing.triggered(e)
+            frameDrawing.stop_failed(e)
+        },
+        mousedown: (e: MouseEvent & DomEvent) => {
+            let ST=S.TEMPFRAME
+            if (e.button == 0) Dispatch(EVENT_MOUSE_LBTN_PRESSED)
+            frameDrawing.start(e)
+            if(ST.HAS(ST.SHOW)) {
+                tempframe.resize.begin(e)
+            }
+        },
+        mousemove: (e: MouseEvent & DomEvent) => {
+            frameDrawing.moving(e)
+            let ST=S.TEMPFRAME
+            if(ST.HAS(ST.SHOW)){
+                tempframe.move.ing(e)
+                tempframe.resize.trigger(e)
+                tempframe.resize.ing(e)
+            }
+        },
+        mouseup: (e: MouseEvent & DomEvent) => {
+            Dispatch(EVENT_MOUSE_LBTN_RELEASED)
+            frameDrawing.stop(e)
+            let ST=S.TEMPFRAME
+            if(ST.HAS(ST.SHOW)){
+                tempframe.resize.end(e)
+                tempframe.move.end(e)
+            }
+        },
+    },
+    AtShadowRoot: {
+        click: (e: MouseEvent & DomEvent) => {
+            tempframe.click.buttonGroup(e)
+        },
+        mousedown: (e: MouseEvent & DomEvent) => {
+            if (e.button == 0) Dispatch(EVENT_MOUSE_LBTN_PRESSED)
+            tempframe.move.begin(e)
+        },
+        dblclick: (e: MouseEvent & DomEvent) => {
+            tempframe.dbclick.setTitle(e)
+        }
+    }
 }
 
-let ActionSet_AtShadowRoot:EventEmitter={
-    mousedown: ActionEmitter_AtShadowRoot_mousedown,
-    mousemove: ActionEmitter_AtShadowRoot_mousemove,
-    mouseup: ActionEmitter_AtShadowRoot_mouseup,
-}
 
-
-export function ServiceMain(){}
-
-export function InstallDispatch_AtBody(){
-    InstallEvent(ActionSet_AtBody)
-}
-export function InstallDispatch_AtShadowRoot(){
-    InstallEvent(ActionSet_AtShadowRoot,CORE.ShadowRoot)
-}
-export function UninstallDispatch_TempFrameDrawing(){
-    UninstallEvent(ActionSet_AtBody)
+export let InstallAction = (act: UserAction) => {
+    let place = {
+        AtBody: window,
+        AtShadowRoot: CORE.ShadowRoot
+    }
+    Object.keys(act).forEach((at) => {
+        InstallEvent(act[at], place[at])
+    })
 }

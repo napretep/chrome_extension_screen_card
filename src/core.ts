@@ -3,7 +3,7 @@ import {CardFrameService, StateService,
     MaskService, ShadowRootService,
     TempFrameDrawingService, TempFrameService} from "./services";
 import {STATE} from "./state";
-import {InstallDispatch_AtBody, InstallDispatch_AtShadowRoot} from "./actionDispatcher";
+import {ActionSet, InstallAction} from "./actionDispatcher";
 import {styles_sheet} from "./utils/styles_sheet";
 import {IService} from "./utils/interfaces";
 import {InstallCoreEventEmitter, SetupCoreEventEmitter,} from "./utils/connector";
@@ -38,8 +38,7 @@ export  class _CORE  extends Singleton<_CORE>()
             this.TempFrameService,
             this.ShadowRootService]
     public InstallDisptach=()=>{
-        InstallDispatch_AtBody()
-        InstallDispatch_AtShadowRoot()
+        InstallAction(ActionSet)
     }
     public InstallStyles=()=>{
         let styleString=""

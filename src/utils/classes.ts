@@ -6,7 +6,7 @@ import {
 }  from "./events"
 
 import {extensionBaseName, CSSClass, assetsDir} from "./constants";
-import {RemoveMaskFromBody, AppendMaskToBody, InstallEvent, UninstallEvent, Dispatch} from "./funcTools";
+import {RemoveMaskFromBody, AppendMaskToBody, InstallEvent, UninstallEvent, Dispatch, AppendChildren} from "./funcTools";
 import {EE, IEventEmitter,IRect} from "./interfaces";
 import {STATE} from "../state";
 import {CORE} from "../core"
@@ -252,46 +252,47 @@ class TempFrameBaseElement{
 
 class TempFrameHeader extends TempFrameBaseElement{
     public height:number = 24
-    public moveBar = document.createElement("div")
+    public children={
+        left:document.createElement("div"),
+        center: document.createElement("div"),
+        right:document.createElement("div"),
+        moveBar:document.createElement("div"),
+    }
     // public buttonDir = [`${assetsDir}/save.png`]
-    public buttonGroup = ["save","fixed","toolbox","title","foldbody","minimize","close"]
+    public leftButtonGroup = ["save","fixed","toolbox"]
+    public rightButtonGroup = ["foldbody","minimize","close"]
     public constructor() {
         super(CSSClass.tempFrameHeader);
         this.InitAll()
     }
     public InitAll=()=>{
         this.InitSelf()
-        this.InitButtonGroup()
         this.InitMoveBar()
+        this.InitButton(this.children.left,this.leftButtonGroup)
+        this.InitCenter()
+        this.InitButton(this.children.right,this.rightButtonGroup)
     }
     public InitSelf=()=>{
-        let btnlen=this.buttonGroup.length-1
-        this.element.style.gridTemplateColumns=`repeat(${Math.floor(btnlen/2)}, ${this.height}px)  auto repeat(${Math.ceil(btnlen/2)}, ${this.height}px)`
-
+        AppendChildren(this.element,...Object.values(this.children))
     }
-    public InitButtonGroup=()=>{
-        this.buttonGroup.map(
-            (buttonname)=>{
+    public InitCenter=()=>{
+        this.children.center.classList.add(CSSClass.tempFrameHeaderButtons.title)
+    }
+    public InitButton=(el:HTMLElement,LR:string[])=>{
+        LR.map(
+            (btnName)=>{
                 let div = document.createElement("div")
-                div.classList.add("icon"+"-"+buttonname)
-                // div.style.border = "1px dotted"
-                if (buttonname!="title") {
-                    div.style.backgroundImage =chrome.runtime.getURL(`assets/${buttonname}.png`);
-                    console.log( chrome.runtime.getURL(`assets/${buttonname}.png`))
+                div.classList.add("icon"+"-"+btnName)
+                div.style.backgroundImage =chrome.runtime.getURL(`assets/${btnName}.png`);
+                    console.log( chrome.runtime.getURL(`assets/${btnName}.png`))
                     div.classList.add(CSSClass.button)
-                }
-                else{
-                    div.textContent ="请输入标题"
-                    div.style.color="white"
-                    div.classList.add(CSSClass.transitionAll)
-                }
-                this.element.appendChild(div)
+                el.appendChild(div)
             }
         )
+        el.classList.add(CSSClass.tempFrameHeaderSide)
     }
     public InitMoveBar=()=>{
-        this.moveBar.classList.add(CSSClass.tempFrameHeaderMoveBar,CSSClass.transitionAll)
-        this.element.appendChild(this.moveBar)
+        this.children.moveBar.classList.add(CSSClass.tempFrameHeaderMoveBar,CSSClass.transitionAll)
     }
 
 }

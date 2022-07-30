@@ -1,4 +1,4 @@
-import {assetsDir, CSSClass, TempFrameFooterHeight, TempFrameHeaderHeight} from "./constants";
+import {assetsDir, BTN_Red, CSSClass, TempFrameFooterHeight, TempFrameHeaderHeight} from "./constants";
 import {MakeIconClass} from "./funcTools";
 
 export let styles_sheet = {
@@ -21,16 +21,21 @@ styles_sheet.default[CSSClass.button] = `
 background-size:100% 100%;
 background-repeat:no-repeat;
 transition:all 200ms;
+width:20px;
+height:20px;
 `
-styles_sheet.other[`.${CSSClass.tempFrameHeader} > div,.${CSSClass.tempFrameFooter} > div`]=`
+
+styles_sheet.other[`.${CSSClass.tempFrameHeaderSide} > div,.${CSSClass.tempFrameFooter} > div`]=`
 border-radius: 4px;
 padding:3px;
 `
-styles_sheet.other[`.${CSSClass.tempFrameHeader} > div:hover,.${CSSClass.tempFrameFooter} > div:hover`]=`
+
+styles_sheet.other[`.${CSSClass.tempFrameHeaderSide} > div:hover,.${CSSClass.tempFrameFooter} > div:hover`]=`
 box-shadow: 4px 4px 4px #494949;
 `
-styles_sheet.other[`.${CSSClass.tempFrameHeader} > div:active, .${CSSClass.tempFrameFooter} > div:active`]=`
-background-color: #ff3333;
+
+styles_sheet.other[`.${CSSClass.tempFrameHeaderSide} > div:active, .${CSSClass.tempFrameFooter} > div:active`]= `
+background-color: ${BTN_Red};
 `
 for(let keyname in CSSClass.tempFrameHeaderButtons){
     let iconpath = chrome.runtime.getURL(`${assetsDir}/${keyname}.png`)
@@ -59,11 +64,10 @@ width: 100%;
 background-color:red;
 opacity: 0.8;
  `
+//一个小方框
 styles_sheet.default[CSSClass.divForBlockMouse]=`
 position: absolute;
-left:50%;
-top:3px;
-transform:translate(-50%,0)
+transform:translate(-50%,-50%);
 width: 20px;
 height: 20px;
 border:1px dotted;
@@ -71,19 +75,19 @@ cursor:crosshair;
 `
 
 styles_sheet.default[CSSClass.tempFrameHeaderMoveBar]=`
-        position: absolute;
-        left:50%;
-        top:3px;
-        width:30%;
-        max-width:150px;
-        height:50%;
-        max-height:20px;
-        background-color:white;
-        opacity: 0.5;
-        border-radius:3px;
-        box-shadow: 1px 1px 1px;
-        cursor:all-scroll;
-        transform:translate(-50%,0);
+position: absolute;
+left:50%;
+top:3px;
+width:30%;
+max-width:150px;
+height:50%;
+max-height:20px;
+background-color:white;
+opacity: 0.5;
+border-radius:3px;
+box-shadow: 1px 1px 1px;
+cursor:all-scroll;
+transform:translate(-50%,0);
 `
 styles_sheet.default[CSSClass.tempFrameContainer]=`
 width:100%;
@@ -101,13 +105,17 @@ overflow:hidden;
 styles_sheet.default[CSSClass.tempFrameHeader]=`
 display:grid;
 height:${TempFrameHeaderHeight}px;
+align-items:center;
+justify-content: space-between;
 grid-template-rows:${TempFrameHeaderHeight}px;
+grid-template-columns: min-content max-content min-content;
 background-image:linear-gradient(#a6e3f5,#81bae0);
 `
 styles_sheet.default[CSSClass.tempFrameFooter]=`
 background-image:linear-gradient(#a6e3f5,#81bae0);
 display:grid;
 justify-content: center;
+align-items: center;
 grid-gap: 2px;
 grid-template-columns: repeat(auto-fit,30px);
 height:${TempFrameFooterHeight}px;
@@ -118,5 +126,22 @@ pointer-events:all;
 `
 styles_sheet.default[CSSClass.transitionAll]=`
 transition:all 100ms;
+`
+
+styles_sheet.default[CSSClass.fullScreen]=`
+position:absolute;
+width:100%;
+height:100%;
+left:0px;
+top:0px;
+`
+
+styles_sheet.default[CSSClass.tempFrameHeaderSide]=`
+display: grid;
+grid-template-rows:30px;
+grid-template-columns: repeat(3,${TempFrameFooterHeight}px);
+align-items: center;
+height:${TempFrameFooterHeight}px;
+grid-gap: 2px;
 `
 

@@ -10,115 +10,174 @@
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UninstallDispatch_TempFrameDrawing = exports.InstallDispatch_AtShadowRoot = exports.InstallDispatch_AtBody = exports.ServiceMain = void 0;
+exports.InstallAction = exports.ActionSet = void 0;
+/**
+ * 这个文件用来处理用户行为事件的分发
+ * */
 var E = __webpack_require__(/*! ./utils/events */ "./src/utils/events.js");
 var events_1 = __webpack_require__(/*! ./utils/events */ "./src/utils/events.js");
 var funcTools_1 = __webpack_require__(/*! ./utils/funcTools */ "./src/utils/funcTools.js");
 var state_1 = __webpack_require__(/*! ./state */ "./src/state.js");
 var core_1 = __webpack_require__(/*! ./core */ "./src/core.js");
-var constants_1 = __webpack_require__(/*! ./utils/constants */ "./src/utils/constants.js");
-// let S = CORE.STATE
-function ActionEmitter_AtBody_keydown(e) {
-    if (e.ctrlKey && e.altKey && (e.key === "e" || e.key === "E")) {
-        if (!core_1.CORE.STATE.FRAME_DRAWING_TRIGGERED)
-            (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_TRIGGERED);
-    }
-    if (e.code === "Escape") {
-        if (core_1.CORE.STATE.FRAME_DRAWING_TRIGGERED) {
-            (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_STOPPED);
-            (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_FAIELD);
+var frameDrawing = {
+    triggered: function (e) {
+        if (e.ctrlKey && e.altKey && (e.key === "e" || e.key === "E")) {
+            if (state_1.STATE.FRAME_DRAWING.NO(state_1.STATE.FRAME_DRAWING.TRIGGERED))
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_TRIGGERED);
         }
-    }
-}
-function ActionEmitter_AtBody_mousedown(e) {
-    var ST = state_1.STATE.TEMPFRAME;
-    if (e.button == 0) {
-        if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.TRIGGERD)) {
+    },
+    stop_failed: function (e) {
+        if (e.code === "Escape") {
+            if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.TRIGGERED)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_STOPPED);
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_FAIELD);
+            }
+        }
+    },
+    start: function (e) {
+        if (e.button == 0 && state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.TRIGGERED)) {
             (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_SATRTED, e);
         }
-        else if (ST.ALL(ST.RESIZE_TRIGGERED) && ST.NO(ST.RESIZE_DOING, ST.RESIZE_BEGIN, ST.AT_BUTTON)) {
-            (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_BEGIN, e); //发送后, 会有DOING状态, 只会触发一次, 因为DOING状态会持续存在
-        }
-    }
-}
-function ActionEmitter_AtBody_mousemove(e) {
-    var ST = state_1.STATE.TEMPFRAME;
-    if (e.button == 0) {
-        if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.STARTED)) {
+    },
+    moving: function (e) {
+        if (state_1.STATE.MOUSE.LBTN_HOLDING && state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.STARTED)) {
             (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_MOVING, e);
         }
-        else if (ST.HAS(ST.SHOW) && ST.NO(ST.AT_BUTTON)) {
-            if (ST.HAS(ST.MOVING))
-                (0, funcTools_1.Dispatch)(E.EVENT_FRAME_MOVING, e);
-            else if (ST.NO(ST.RESIZE_BEGIN)) {
-                (0, funcTools_1.Dispatch)(E.EVENT_FRAME_MOUSE_HOVER, e); //如果检测通过,会发射EVENT_FRAME_RESIZE_TRIGGERED
+    },
+    stop: function (e) {
+        if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.STARTED)) {
+            (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_STOPPED, e);
+        }
+    }
+};
+var tempframe = {
+    move: {
+        begin: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (funcTools_1.TargetIs.tempFrameHeaderMoveBar(e.target)
+                && ST.NOGROUP(ST.Groups.MOVE)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_MOVE_BEGIN, e);
             }
-            else if (ST.HAS(ST.RESIZE_BEGIN)) {
-                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZING, e);
+        },
+        ing: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (state_1.STATE.MOUSE.HAS(state_1.STATE.MOUSE.LBTN_HOLDING)
+                && ST.ONLYGROUP(ST.Groups.MOVE)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_MOVING, e);
+            }
+        },
+        end: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.ONLYGROUP(ST.Groups.MOVE)) {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_MOVE_END);
+            }
+        },
+    },
+    resize: {
+        trigger: function (e) {
+        },
+        begin: function (e) {
+        },
+        ing: function (e) {
+        },
+        end: function (e) {
+        }
+    },
+    click: {
+        buttonGroup: function (e) {
+            if (!e.target) {
+                return;
+            }
+            if (funcTools_1.TargetIs.tempframeHeaderButtons(e.target) && state_1.STATE.TEMPFRAME.NO()) {
+                if ((0, funcTools_1.HasClass)(e.target, "icon-close")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_HIDE);
+                }
+                else if ((0, funcTools_1.HasClass)(e.target, "icon-foldbody")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_TOGGLE_FOLDBODY);
+                }
+                else if ((0, funcTools_1.HasClass)(e.target, "icon-minimize")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_TOGGLE_MINIMIZE);
+                }
+                else if ((0, funcTools_1.HasClass)(e.target, "icon-toolbox")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_TOGGLE_TOOLS);
+                }
+                else if ((0, funcTools_1.HasClass)(e.target, "icon-fixed")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_TOGGLE_PINE);
+                }
+                else if ((0, funcTools_1.HasClass)(e.target, "icon-save")) {
+                    (0, funcTools_1.Dispatch)(E.EVENT_FRAME_SAVE_AS);
+                }
+            }
+        }
+    },
+    dbclick: {
+        setTitle: function (e) {
+            if (funcTools_1.TargetIs.tempframeHeaderTitle(e.target)) {
+                console.log("title");
+            }
+            else if (funcTools_1.TargetIs.tempFrameHeaderMoveBar(e.target)) {
             }
         }
     }
-}
-function ActionEmitter_AtBody_mouseup(e) {
-    if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.STARTED)) {
-        (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_DRAWING_STOPPED, e);
-    }
-    else if (state_1.STATE.TEMPFRAME.ALL(state_1.STATE.TEMPFRAME.SHOW, state_1.STATE.TEMPFRAME.MOVING)) {
-        (0, funcTools_1.Dispatch)(E.EVENT_FRAME_MOVE_END);
-    }
-    else if (state_1.STATE.TEMPFRAME.ALL(state_1.STATE.TEMPFRAME.SHOW, state_1.STATE.TEMPFRAME.RESIZE_DOING)) {
-        (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_END);
-    }
-}
-function ActionEmitter_AtShadowRoot_mousedown(e) {
-    if (e.button == 0) {
-        if (state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.SHOW)) {
-            //开始移动 TEMPFRAME
-            if (e.target.classList.contains(constants_1.CSSClass.tempFrameHeaderMoveBar)) {
-                (0, funcTools_1.Dispatch)(E.EVENT_FRAME_MOVE_BEGIN, e);
+};
+exports.ActionSet = {
+    AtBody: {
+        keydown: function (e) {
+            frameDrawing.triggered(e);
+            frameDrawing.stop_failed(e);
+        },
+        mousedown: function (e) {
+            var ST = state_1.STATE.TEMPFRAME;
+            if (e.button == 0)
+                (0, funcTools_1.Dispatch)(events_1.EVENT_MOUSE_LBTN_PRESSED);
+            frameDrawing.start(e);
+            if (ST.HAS(ST.SHOW)) {
+                tempframe.resize.begin(e);
             }
-            else if (funcTools_1.TargetIs.tempframeHeaderButtons(e.target) && e.target.className.indexOf("close") >= 0) {
-                (0, funcTools_1.Dispatch)(E.EVENT_FRAME_HIDE);
+        },
+        mousemove: function (e) {
+            frameDrawing.moving(e);
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.HAS(ST.SHOW)) {
+                tempframe.move.ing(e);
+                tempframe.resize.trigger(e);
+                tempframe.resize.ing(e);
             }
+        },
+        mouseup: function (e) {
+            (0, funcTools_1.Dispatch)(events_1.EVENT_MOUSE_LBTN_RELEASED);
+            frameDrawing.stop(e);
+            var ST = state_1.STATE.TEMPFRAME;
+            if (ST.HAS(ST.SHOW)) {
+                tempframe.resize.end(e);
+                tempframe.move.end(e);
+            }
+        },
+    },
+    AtShadowRoot: {
+        click: function (e) {
+            tempframe.click.buttonGroup(e);
+        },
+        mousedown: function (e) {
+            if (e.button == 0)
+                (0, funcTools_1.Dispatch)(events_1.EVENT_MOUSE_LBTN_PRESSED);
+            tempframe.move.begin(e);
+        },
+        dblclick: function (e) {
+            tempframe.dbclick.setTitle(e);
         }
     }
-}
-function ActionEmitter_AtShadowRoot_mousemove(e) {
-    // if (TargetIs.tempframeHeaderButtons(e.target) || TargetIs.tempframeFooterButtons(e.target)){
-    //     Dispatch(E.EVENT_FRAME_AT_BUTTON)
-    // }
-    // else{
-    //     Dispatch(E.EVENT_FRAME_OUT_BUTTON)
-    //
-    // }
-}
-function ActionEmitter_AtShadowRoot_mouseup(e) {
-}
-var ActionSet_AtBody = {
-    keydown: ActionEmitter_AtBody_keydown,
-    mousedown: ActionEmitter_AtBody_mousedown,
-    mousemove: ActionEmitter_AtBody_mousemove,
-    mouseup: ActionEmitter_AtBody_mouseup,
 };
-var ActionSet_AtShadowRoot = {
-    mousedown: ActionEmitter_AtShadowRoot_mousedown,
-    mousemove: ActionEmitter_AtShadowRoot_mousemove,
-    mouseup: ActionEmitter_AtShadowRoot_mouseup,
+var InstallAction = function (act) {
+    var place = {
+        AtBody: window,
+        AtShadowRoot: core_1.CORE.ShadowRoot
+    };
+    Object.keys(act).forEach(function (at) {
+        (0, funcTools_1.InstallEvent)(act[at], place[at]);
+    });
 };
-function ServiceMain() { }
-exports.ServiceMain = ServiceMain;
-function InstallDispatch_AtBody() {
-    (0, funcTools_1.InstallEvent)(ActionSet_AtBody);
-}
-exports.InstallDispatch_AtBody = InstallDispatch_AtBody;
-function InstallDispatch_AtShadowRoot() {
-    (0, funcTools_1.InstallEvent)(ActionSet_AtShadowRoot, core_1.CORE.ShadowRoot);
-}
-exports.InstallDispatch_AtShadowRoot = InstallDispatch_AtShadowRoot;
-function UninstallDispatch_TempFrameDrawing() {
-    (0, funcTools_1.UninstallEvent)(ActionSet_AtBody);
-}
-exports.UninstallDispatch_TempFrameDrawing = UninstallDispatch_TempFrameDrawing;
+exports.InstallAction = InstallAction;
 //# sourceMappingURL=actionDispatcher.js.map
 
 /***/ }),
@@ -161,12 +220,16 @@ var TempFrameComponent = /** @class */ (function (_super) {
     function TempFrameComponent() {
         var _this = _super.call(this) || this;
         _this._container = new classes_1.TempFrameContainer();
-        _this.UpdateGeometry = function (el) {
-            // let r = this.WrapFrameRect(el)
+        _this.UpdateGeometry = function (elRect) {
             var r2 = {};
-            for (var key in el) {
-                if (el[key])
-                    r2[key] = "".concat(el[key], "px");
+            if (_this.IsAbsolutePosition) {
+                elRect.left += window.scrollX;
+                elRect.top += window.scrollY;
+            }
+            console.log("UpdateGeometry elRect=", elRect);
+            for (var key in elRect) {
+                if (elRect[key])
+                    r2[key] = "".concat(elRect[key], "px");
             }
             (0, funcTools_1.setElStyle)(_this.component, r2);
         };
@@ -181,12 +244,20 @@ var TempFrameComponent = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
+    Object.defineProperty(TempFrameComponent.prototype, "IsAbsolutePosition", {
+        get: function () {
+            var p = window.getComputedStyle(this.component).position;
+            return p ? p == "absolute" : true;
+        },
+        enumerable: false,
+        configurable: true
+    });
     TempFrameComponent.prototype.WrapFrameRect = function (elRect) {
         var headerHeight = this._container.headerHeight > 0 ? this._container.headerHeight : constants_1.TempFrameHeaderHeight;
         var footerHeight = this._container.footerHeight > 0 ? this._container.footerHeight : constants_1.TempFrameFooterHeight;
         var rect = {
-            left: window.scrollX + elRect.left,
-            top: window.scrollY + elRect.top - headerHeight,
+            left: elRect.left,
+            top: elRect.top - headerHeight,
             width: elRect.width,
             height: elRect.height + headerHeight + footerHeight
         };
@@ -275,8 +346,7 @@ var _CORE = /** @class */ (function (_super) {
             _this.TempFrameService,
             _this.ShadowRootService];
         _this.InstallDisptach = function () {
-            (0, actionDispatcher_1.InstallDispatch_AtBody)();
-            (0, actionDispatcher_1.InstallDispatch_AtShadowRoot)();
+            (0, actionDispatcher_1.InstallAction)(actionDispatcher_1.ActionSet);
         };
         _this.InstallStyles = function () {
             var styleString = "";
@@ -403,7 +473,7 @@ var TempFrameDrawingService = /** @class */ (function (_super) {
             _this.HideElement();
         };
         _this.OnDrawingFrameStarted = function (e) {
-            if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.TRIGGERD)) {
+            if (state_1.STATE.FRAME_DRAWING.HAS(state_1.STATE.FRAME_DRAWING.TRIGGERED)) {
                 _this.ShowElement();
                 _this.mousedownPosition = [e.detail.clientX, e.detail.clientY];
                 _this.UpdateBlockMouseDivPosition(e.detail);
@@ -432,8 +502,8 @@ var TempFrameDrawingService = /** @class */ (function (_super) {
         };
         _this.UpdateBlockMouseDivPosition = function (e) {
             var _a = [window.scrollX, window.scrollY], sX = _a[0], sY = _a[1];
-            _this.divForBlockMouse.style.left = (e.clientX - 10 + sX).toString() + "px";
-            _this.divForBlockMouse.style.top = (e.clientY - 10 + sY).toString() + "px";
+            _this.divForBlockMouse.style.left = (e.clientX + sX).toString() + "px";
+            _this.divForBlockMouse.style.top = (e.clientY + sY).toString() + "px";
         };
         _this.UpdateSelectionDivSize = function (e) {
             console.assert(e.constructor == MouseEvent, "UpdateSelectionDivSize=(e:MouseEvent)=> 收到一个错误参数");
@@ -498,78 +568,77 @@ var TempFrameService = /** @class */ (function () {
             (0, funcTools_1.Dispatch)(E.EVENT_FRAME_SHOW);
         };
         this.OnMoveBegin = function (e) {
-            if (state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.MOVING)) {
-                _this.TempFrame.classList.remove(constants_1.CSSClass.transitionAll);
-                _this.state.moving.startmove = {
-                    x: e.detail.clientX, y: e.detail.clientY,
-                    left: _this.TempFrame.getBoundingClientRect().left,
-                    top: _this.TempFrame.getBoundingClientRect().top
-                };
-            }
+            _this.TempFrame.classList.remove(constants_1.CSSClass.transitionAll);
+            _this.state.moving.startmove = {
+                x: e.detail.clientX, y: e.detail.clientY,
+                left: _this.TempFrame.getBoundingClientRect().left,
+                top: _this.TempFrame.getBoundingClientRect().top
+            };
+            console.log("OnMoveBegin=", _this.state.moving.startmove);
         };
         this.OnMove = function (e) {
-            if (state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.MOVING)) {
-                var start = _this.state.moving.startmove;
-                var rect = {
-                    left: e.detail.clientX - (start.x - start.left) + window.scrollX,
-                    top: e.detail.clientY - (start.y - start.top) + window.scrollY,
-                    width: null,
-                    height: null
-                };
-                _this._TempFrame.UpdateGeometry(rect);
-            }
+            // this.TempFrame.classList.remove(CSSClass.transitionAll)
+            var start = _this.state.moving.startmove;
+            var rect = {
+                left: start.left + (e.detail.clientX - start.x),
+                top: start.top + (e.detail.clientY - start.y),
+                width: null,
+                height: null
+            };
+            console.log("onmove  ", rect);
+            _this._TempFrame.UpdateGeometry(rect);
         };
         this.OnMoveEnd = function () {
             _this.TempFrame.classList.add(constants_1.CSSClass.transitionAll);
         };
         this.OnMouseHover = function (e) {
-            var ST = state_1.STATE.TEMPFRAME;
-            if (ST.ALL(ST.SHOW) && !ST.SOME(ST.RESIZE_DOING, ST.RESIZE_BEGIN)) {
-                var edge = _this._TempFrame.AtEdge({ x: e.detail.clientX, y: e.detail.clientY });
-                if (edge) {
-                    document.body.style.cursor = _this.cursorAt[edge];
-                    _this.TempFrame.style.cursor = _this.cursorAt[edge];
-                    _this.resizeBegin = {
-                        cursor: { x: e.detail.clientX, y: e.detail.clientY },
-                        div: { left: _this.TempFrame.getBoundingClientRect().left,
-                            top: _this.TempFrame.getBoundingClientRect().top,
-                            width: _this.TempFrame.getBoundingClientRect().width,
-                            height: _this.TempFrame.getBoundingClientRect().height,
-                        },
-                        direction: edge
-                    };
-                    (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_TRIGGERED);
-                }
-                else {
-                    (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_END);
-                    _this.TempFrame.style.cursor = "";
-                    document.body.style.cursor = "";
-                }
+            var edge = _this._TempFrame.AtEdge({ x: e.detail.clientX, y: e.detail.clientY });
+            if (edge) {
+                document.body.style.cursor = _this.cursorAt[edge];
+                _this.TempFrame.style.cursor = _this.cursorAt[edge];
+                _this.resizeBegin = {
+                    cursor: { x: e.detail.clientX, y: e.detail.clientY },
+                    div: {
+                        left: _this.TempFrame.getBoundingClientRect().left,
+                        top: _this.TempFrame.getBoundingClientRect().top,
+                        width: _this.TempFrame.getBoundingClientRect().width,
+                        height: _this.TempFrame.getBoundingClientRect().height,
+                    },
+                    direction: edge
+                };
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_TRIGGERED);
+            }
+            else {
+                (0, funcTools_1.Dispatch)(events_1.EVENT_FRAME_RESIZE_END);
+                _this.InitStyle();
             }
         };
         this.OnClosed = function () {
         };
         this.OnResizing = function (e) {
-            var ST = state_1.STATE.TEMPFRAME;
-            if (ST.ALL(ST.RESIZE_TRIGGERED, ST.RESIZE_DOING)) {
-                var _a = [window.scrollX, window.scrollY, e.detail.clientX, e.detail.clientY], sx = _a[0], sy = _a[1], ex = _a[2], ey = _a[3];
-                var _b = [_this.resizeBegin.cursor, _this.resizeBegin.div, _this.resizeBegin.direction], p = _b[0], r = _b[1], d = _b[2];
-                var rect = { left: null, top: null, width: null, height: null };
-                rect.height = d.indexOf("B") >= 0 ? (r.height + (ey - p.y)) : r.height;
-                rect.width = d.indexOf("R") >= 0 ? (r.width + (ex - p.x)) : r.width;
-                rect.height = d.indexOf("T") >= 0 ? (r.height - (ey - p.y)) : rect.height;
-                rect.top = d.indexOf("T") >= 0 ? (sy + (ey - p.y) + r.top) : r.top;
-                rect.width = d.indexOf("L") >= 0 ? (r.width - (ex - p.x)) : rect.width;
-                rect.left = d.indexOf("L") >= 0 ? (sx + (ex - p.x) + r.left) : r.left;
-                _this._TempFrame.UpdateGeometry(rect);
-            }
+            var _a = [e.detail.clientX, e.detail.clientY], ex = _a[0], ey = _a[1];
+            var _b = [_this.resizeBegin.cursor, _this.resizeBegin.div, _this.resizeBegin.direction], p = _b[0], r = _b[1], d = _b[2];
+            var rect = { left: null, top: null, width: null, height: null };
+            rect.height = d.indexOf("B") >= 0 ? (r.height + (ey - p.y)) : r.height;
+            rect.width = d.indexOf("R") >= 0 ? (r.width + (ex - p.x)) : r.width;
+            rect.height = d.indexOf("T") >= 0 ? (r.height - (ey - p.y)) : rect.height;
+            rect.top = d.indexOf("T") >= 0 ? ((ey - p.y) + r.top) : r.top;
+            rect.width = d.indexOf("L") >= 0 ? (r.width - (ex - p.x)) : rect.width;
+            rect.left = d.indexOf("L") >= 0 ? ((ex - p.x) + r.left) : r.left;
+            _this._TempFrame.UpdateGeometry(rect);
         };
-        this.OnResizeEnd = function () { };
+        this.OnResizeEnd = function () {
+        };
         this.OnMinimize = function () {
         };
-        this.OnFolded = function () {
+        this.OnFoldBody = function (e) {
+            if (state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.BTN_FOLDBODY)) {
+                _this._TempFrame.UpdateGeometry({ left: null, top: null, width: null, height: constants_1.TempFrameHeaderHeight });
+            }
         };
         this.OnOpenToolBox = function () {
+        };
+        this.OnPine = function () {
         };
         this.OnSave = function () {
         };
@@ -582,9 +651,16 @@ var TempFrameService = /** @class */ (function () {
         this.ShowElement = function () {
             (0, funcTools_1.ShowElementInShadowRoot)(_this.TempFrame);
         };
+        this.InitStyle = function () {
+            _this.TempFrame.style.cursor = "";
+            document.body.style.cursor = "";
+        };
     }
     Object.defineProperty(TempFrameService.prototype, "TempFrame", {
-        get: function () { var _a, _b; return (_b = (_a = this._TempFrame) === null || _a === void 0 ? void 0 : _a.component) !== null && _b !== void 0 ? _b : null; },
+        get: function () {
+            var _a, _b;
+            return (_b = (_a = this._TempFrame) === null || _a === void 0 ? void 0 : _a.component) !== null && _b !== void 0 ? _b : null;
+        },
         enumerable: false,
         configurable: true
     });
@@ -628,6 +704,14 @@ var ShadowRootService = /** @class */ (function (_super) {
         _this.DisableHostPointerEvent = function () {
             _this.host.style.pointerEvents = "none";
         };
+        _this.EnableRootContainerFullScreen = function () {
+            _this.root.classList.add(constants_1.CSSClass.fullScreen);
+            (0, funcTools_1.consolelog)("EnableRootContainerFullScreen");
+        };
+        _this.DisableRootContainerFullScreen = function () {
+            _this.root.classList.remove(constants_1.CSSClass.fullScreen);
+            (0, funcTools_1.consolelog)("DisableRootContainerFullScreen");
+        };
         _this.SetupHost();
         return _this;
     }
@@ -670,14 +754,21 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.STATE = void 0;
 var classes_1 = __webpack_require__(/*! ./utils/classes */ "./src/utils/classes.js");
+/**
+ * {STATE}是状态, 用集合存储各类flag, 从而显示出不同的状态.
+ * {Group}是flag的分类, flag一般写成 xxx_xxx_xxx的形式, `_` 分割的首个xxx就是flag的分类
+ *
+ * */
 var StateItem = /** @class */ (function () {
     function StateItem() {
         var _this = this;
         this.STATE = new Set();
         this.EMPTY = 0;
+        //满足
         this.HAS = function (B) {
             return _this.STATE.has(B);
         };
+        //全部不满手
         this.NO = function () {
             var B = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -685,6 +776,7 @@ var StateItem = /** @class */ (function () {
             }
             return !_this.SOME.apply(_this, B);
         };
+        //部分条件满足
         this.SOME = function () {
             var B = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -692,6 +784,7 @@ var StateItem = /** @class */ (function () {
             }
             return B.some(function (value) { return _this.HAS(value); });
         };
+        //全部条件满足
         this.ALL = function () {
             var B = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -699,14 +792,26 @@ var StateItem = /** @class */ (function () {
             }
             return B.reduce(function (sum, value) { return sum && _this.HAS(value); }, true);
         };
+        //当且仅当
+        this.IFF = function () {
+            var B = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                B[_i] = arguments[_i];
+            }
+            return _this.toArray().sort().toString() === B.sort().toString();
+        };
         this.ADD = function () {
             var B = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 B[_i] = arguments[_i];
             }
-            B.forEach(function (value) { return _this.STATE.add(value); });
-            _this.toArray();
-            // consolelog(this.toString())
+            B.forEach(function (value) {
+                var group = value.split("_")[0];
+                _this.RemoveGroup(group);
+                _this.STATE.add(value);
+            });
+            console.log(_this.constructor.name + " " +
+                B.toString() + ">>>added>>>" + _this.toString());
         };
         this.DEL = function () {
             var B = [];
@@ -714,16 +819,11 @@ var StateItem = /** @class */ (function () {
                 B[_i] = arguments[_i];
             }
             B.forEach(function (value) { return _this.STATE.delete(value); });
-            _this.toArray();
-            // consolelog(this.toString())
+            console.log(_this.constructor.name + " " + B.toString() + ">>>deleted>>>" + _this.toString());
         };
         this.CLEAR = function () {
             _this.DEL.apply(_this, _this.toArray());
         };
-        // public IFF=(...B:string[])=>{
-        // //IF and Only if
-        //
-        // }
         this.SETONLY = function () {
             var B = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -735,12 +835,71 @@ var StateItem = /** @class */ (function () {
         this.toArray = function () {
             return Array.from(_this.STATE.values());
         };
-        this.AtBasicState = function () {
-            return _this.toArray() == _this.BasicState;
+        this.IsBasicState = function () {
+            return _this.IFF.apply(_this, _this.BasicFlag);
+        };
+        this.SetBasicState = function () {
+            _this.SETONLY.apply(_this, _this.BasicFlag);
+        };
+        this.InitWith = function () {
+            var B = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                B[_i] = arguments[_i];
+            }
+            _this.SetBasicState();
+            _this.ADD.apply(_this, B);
+        };
+        /**
+         * NOGROUP 即状态中 没有 B类flag
+         * */
+        this.NOGROUP = function (B) {
+            return !_this.toArray().some(function (s) {
+                s.startsWith(B);
+            });
+        };
+        /**
+         *     ONLYGROUP的意思是 在GroupNames中 B类flag是当前状态唯一存在的
+         * */
+        this.ONLYGROUP = function (B) {
+            return Object.keys(_this.Groups).reduce(function (result, next) {
+                if (B === next)
+                    return result && _this.HASGROUP(B);
+                return result && !_this.HASGROUP(next);
+            }, true);
+        };
+        /**
+         * HASGROUP 就是检测当前状态中是否存在B类flag
+         * */
+        this.HASGROUP = function (B) {
+            return _this.toArray().some(function (s) {
+                return s.startsWith(B);
+            });
+        };
+        /**
+         * 获取状态中, 与groupname 冲突的集
+         * */
+        this.getConlictSet = function (groupname) {
+            return _this.ConflictFlag.reduce(function (result, next) {
+                return next.has(groupname) ? next : result;
+            }, new Set());
+        };
+        /**
+         * 移除状态中所有 groupname类的flag
+         * */
+        this.RemoveGroup = function (groupname, includeSelf) {
+            if (includeSelf === void 0) { includeSelf = false; }
+            _this.getConlictSet(groupname)
+                .forEach(function (g_name) {
+                _this.STATE.forEach(function (s_flag) {
+                    return s_flag.startsWith(g_name) && (includeSelf ? groupname == g_name : !(groupname == g_name)) ?
+                        _this.DEL(s_flag)
+                        : null;
+                });
+            });
         };
     }
     StateItem.prototype.toString = function () {
-        return this.toArray().reduce(function (sum, next) { return next + "," + sum; }, "");
+        return this.toArray().toString();
     };
     return StateItem;
 }());
@@ -748,10 +907,12 @@ var FRAME_DRAWING = /** @class */ (function (_super) {
     __extends(FRAME_DRAWING, _super);
     function FRAME_DRAWING() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.TRIGGERD = "TRIGGERD";
+        _this.TRIGGERED = "TRIGGERD";
         _this.STARTED = "STARTED";
         _this.MOVING = "MOVING";
-        _this.BasicState = [];
+        _this.Groups = {};
+        _this.BasicFlag = [];
+        _this.ConflictFlag = [];
         return _this;
     }
     return FRAME_DRAWING;
@@ -761,18 +922,45 @@ var TEMPFRAME = /** @class */ (function (_super) {
     function TEMPFRAME() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.SHOW = "SHOW";
-        _this.MOVING = "MOVING";
+        _this.MOVE_BEGIN = "MOVE_BEGIN";
+        _this.MOVE_DOING = "MOVE_DOING";
         _this.RESIZE_TRIGGERED = "RESIZE_TRIGGERED";
         _this.RESIZE_BEGIN = "RESIZE_BEGIN";
         _this.RESIZE_DOING = "RESIZE_DOING";
+        _this.BTN_FOLDBODY = "BTN_FOLDBODY";
+        _this.BTN_MINIMIZE = "BTN_MINIMIZE";
+        _this.BTN_TOOLS = "BTN_TOOLS";
+        _this.BTN_PINE = "BTN_PINE";
         _this.ClearResize = function () {
             _this.DEL(_this.RESIZE_TRIGGERED, _this.RESIZE_DOING, _this.RESIZE_BEGIN);
         };
+        _this.ClearMove = function () {
+            _this.DEL(_this.MOVE_DOING);
+        };
         _this.AT_BUTTON = "AT_BUTTON";
-        _this.BasicState = [_this.SHOW];
+        _this.BasicFlag = [_this.SHOW];
+        _this.Groups = {
+            RESIZE: "RESIZE", MOVE: "MOVE"
+        };
+        _this.ConflictFlag = [new Set([_this.Groups.RESIZE, _this.Groups.MOVE])];
         return _this;
     }
     return TEMPFRAME;
+}(StateItem));
+var MOUSE = /** @class */ (function (_super) {
+    __extends(MOUSE, _super);
+    function MOUSE() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.BasicFlag = [];
+        _this.ConflictFlag = [];
+        _this.Groups = {};
+        _this.LBTN_HOLDING = "LBTN_HOLDING";
+        _this.LBTN_RELEASED = "LBTN_RELEASED";
+        _this.RBTN_HOLDING = "RBTN_HOLDING";
+        _this.RBTN_RELEASED = "RBTN_RELEASED";
+        return _this;
+    }
+    return MOUSE;
 }(StateItem));
 var _STATE = /** @class */ (function (_super) {
     __extends(_STATE, _super);
@@ -781,6 +969,7 @@ var _STATE = /** @class */ (function (_super) {
         /*
         * 单例模式
         * */
+        _this.MOUSE = new MOUSE();
         _this.FRAME_DRAWING = new FRAME_DRAWING();
         _this.TEMPFRAME = new TEMPFRAME();
         _this.FRAME_DRAWING_TRIGGERED = false;
@@ -796,29 +985,6 @@ var _STATE = /** @class */ (function (_super) {
 }((0, classes_1.Singleton)()));
 exports.STATE = _STATE.Instance;
 //# sourceMappingURL=state.js.map
-
-/***/ }),
-
-/***/ "./src/test.js":
-/*!*********************!*\
-  !*** ./src/test.js ***!
-  \*********************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.test = void 0;
-var funcTools_1 = __webpack_require__(/*! ./utils/funcTools */ "./src/utils/funcTools.js");
-function test() {
-    (0, funcTools_1.InstallEvent)({
-        EVENT_FRAME_DRAWING_TRIGGERED: function () {
-            console.log("收到 EVENT_FRAME_DRAWING_TRIGGERED");
-        }
-    });
-    // document.body.addEventListener(EVENT_FRAME_DRAWING_TRIGGERED,()=>{ console.log("收到 EVENT_FRAME_DRAWING_TRIGGERED")})
-}
-exports.test = test;
-//# sourceMappingURL=test.js.map
 
 /***/ }),
 
@@ -844,9 +1010,19 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.TempFrameContainer = exports.Singleton = void 0;
 var constants_1 = __webpack_require__(/*! ./constants */ "./src/utils/constants.js");
+var funcTools_1 = __webpack_require__(/*! ./funcTools */ "./src/utils/funcTools.js");
 function Singleton() {
     var Singleton = /** @class */ (function () {
         function Singleton() {
@@ -891,39 +1067,41 @@ var TempFrameHeader = /** @class */ (function (_super) {
     function TempFrameHeader() {
         var _this = _super.call(this, constants_1.CSSClass.tempFrameHeader) || this;
         _this.height = 24;
-        _this.moveBar = document.createElement("div");
+        _this.children = {
+            left: document.createElement("div"),
+            center: document.createElement("div"),
+            right: document.createElement("div"),
+            moveBar: document.createElement("div"),
+        };
         // public buttonDir = [`${assetsDir}/save.png`]
-        _this.buttonGroup = ["save", "fixed", "toolbox", "title", "foldbody", "minimize", "close"];
+        _this.leftButtonGroup = ["save", "fixed", "toolbox"];
+        _this.rightButtonGroup = ["foldbody", "minimize", "close"];
         _this.InitAll = function () {
             _this.InitSelf();
-            _this.InitButtonGroup();
             _this.InitMoveBar();
+            _this.InitButton(_this.children.left, _this.leftButtonGroup);
+            _this.InitCenter();
+            _this.InitButton(_this.children.right, _this.rightButtonGroup);
         };
         _this.InitSelf = function () {
-            var btnlen = _this.buttonGroup.length - 1;
-            _this.element.style.gridTemplateColumns = "repeat(".concat(Math.floor(btnlen / 2), ", ").concat(_this.height, "px)  auto repeat(").concat(Math.ceil(btnlen / 2), ", ").concat(_this.height, "px)");
+            funcTools_1.AppendChildren.apply(void 0, __spreadArray([_this.element], Object.values(_this.children), false));
         };
-        _this.InitButtonGroup = function () {
-            _this.buttonGroup.map(function (buttonname) {
+        _this.InitCenter = function () {
+            _this.children.center.classList.add(constants_1.CSSClass.tempFrameHeaderButtons.title);
+        };
+        _this.InitButton = function (el, LR) {
+            LR.map(function (btnName) {
                 var div = document.createElement("div");
-                div.classList.add("icon" + "-" + buttonname);
-                // div.style.border = "1px dotted"
-                if (buttonname != "title") {
-                    div.style.backgroundImage = chrome.runtime.getURL("assets/".concat(buttonname, ".png"));
-                    console.log(chrome.runtime.getURL("assets/".concat(buttonname, ".png")));
-                    div.classList.add(constants_1.CSSClass.button);
-                }
-                else {
-                    div.textContent = "请输入标题";
-                    div.style.color = "white";
-                    div.classList.add(constants_1.CSSClass.transitionAll);
-                }
-                _this.element.appendChild(div);
+                div.classList.add("icon" + "-" + btnName);
+                div.style.backgroundImage = chrome.runtime.getURL("assets/".concat(btnName, ".png"));
+                console.log(chrome.runtime.getURL("assets/".concat(btnName, ".png")));
+                div.classList.add(constants_1.CSSClass.button);
+                el.appendChild(div);
             });
+            el.classList.add(constants_1.CSSClass.tempFrameHeaderSide);
         };
         _this.InitMoveBar = function () {
-            _this.moveBar.classList.add(constants_1.CSSClass.tempFrameHeaderMoveBar, constants_1.CSSClass.transitionAll);
-            _this.element.appendChild(_this.moveBar);
+            _this.children.moveBar.classList.add(constants_1.CSSClass.tempFrameHeaderMoveBar, constants_1.CSSClass.transitionAll);
         };
         _this.InitAll();
         return _this;
@@ -1036,33 +1214,55 @@ var SetupCoreEventEmitter = function () {
     var _a = [core_1.CORE.StateService, core_1.CORE.MaskService, core_1.CORE.ShadowRootService,
         core_1.CORE.TempFrameDrawingService, core_1.CORE.TempFrameService], state = _a[0], mask = _a[1], root = _a[2], draw = _a[3], tempframe = _a[4];
     state.registEvents = {
-        EVENT_FRAME_DRAWING_TRIGGERED: function () { state_1.STATE.FRAME_DRAWING.ADD(state_1.STATE.FRAME_DRAWING.TRIGGERD); },
+        EVENT_FRAME_DRAWING_TRIGGERED: function () { state_1.STATE.FRAME_DRAWING.ADD(state_1.STATE.FRAME_DRAWING.TRIGGERED); },
         EVENT_FRAME_DRAWING_SATRTED: function () { state_1.STATE.FRAME_DRAWING.ADD(state_1.STATE.FRAME_DRAWING.STARTED); },
         EVENT_FRAME_DRAWING_MOVING: function () { state_1.STATE.FRAME_DRAWING.ADD(state_1.STATE.FRAME_DRAWING.MOVING); },
         EVENT_FRAME_DRAWING_STOPPED: function () { state_1.STATE.FRAME_DRAWING.CLEAR(); },
-        EVENT_FRAME_SHOW: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.SHOW); },
+        EVENT_FRAME_SHOW: function () { state_1.STATE.TEMPFRAME.SetBasicState(); },
         EVENT_FRAME_HIDE: function () { state_1.STATE.TEMPFRAME.CLEAR(); },
-        EVENT_FRAME_MOVE_BEGIN: function () {
-            state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.MOVING);
-            state_1.STATE.TEMPFRAME.ClearResize();
-        },
-        EVENT_FRAME_MOVE_END: function () { state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.MOVING); },
-        EVENT_FRAME_RESIZE_TRIGGERED: function () {
-            state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.RESIZE_TRIGGERED);
-            state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.MOVING);
-        },
+        EVENT_FRAME_MOVE_BEGIN: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.MOVE_BEGIN); },
+        EVENT_FRAME_MOVING: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.MOVE_DOING); },
+        EVENT_FRAME_MOVE_END: function () { state_1.STATE.TEMPFRAME.RemoveGroup("MOVE"); },
+        EVENT_FRAME_RESIZE_TRIGGERED: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.RESIZE_TRIGGERED); },
         EVENT_FRAME_RESIZE_BEGIN: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.RESIZE_BEGIN); },
         EVENT_FRAME_RESIZING: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.RESIZE_DOING); },
-        EVENT_FRAME_RESIZE_END: function () {
-            state_1.STATE.TEMPFRAME
-                .DEL(state_1.STATE.TEMPFRAME.RESIZE_DOING, state_1.STATE.TEMPFRAME.RESIZE_TRIGGERED, state_1.STATE.TEMPFRAME.RESIZE_BEGIN);
-        },
+        EVENT_FRAME_RESIZE_END: function () { state_1.STATE.TEMPFRAME.RemoveGroup("RESIZE"); },
         EVENT_FRAME_AT_BUTTON: function () { state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.AT_BUTTON); },
-        EVENT_FRAME_OUT_BUTTON: function () { state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.AT_BUTTON); }
+        EVENT_FRAME_OUT_BUTTON: function () { state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.AT_BUTTON); },
+        EVENT_MOUSE_LBTN_PRESSED: function () { state_1.STATE.MOUSE.ADD(state_1.STATE.MOUSE.LBTN_HOLDING); },
+        EVENT_MOUSE_LBTN_RELEASED: function () { state_1.STATE.MOUSE.DEL(state_1.STATE.MOUSE.LBTN_HOLDING); },
+        EVENT_FRAME_TOGGLE_FOLDBODY: function () {
+            if (!state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.BTN_FOLDBODY))
+                state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.BTN_FOLDBODY);
+            else
+                state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.BTN_FOLDBODY);
+        },
+        EVENT_FRAME_TOGGLE_MINIMIZE: function () {
+            if (!state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.BTN_MINIMIZE))
+                state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.BTN_MINIMIZE);
+            else
+                state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.BTN_MINIMIZE);
+        },
+        EVENT_FRAME_TOGGLE_TOOLS: function () {
+            if (!state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.BTN_TOOLS))
+                state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.BTN_TOOLS);
+            else
+                state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.BTN_TOOLS);
+        },
+        EVENT_FRAME_TOGGLE_PINE: function () {
+            if (!state_1.STATE.TEMPFRAME.HAS(state_1.STATE.TEMPFRAME.BTN_PINE))
+                state_1.STATE.TEMPFRAME.ADD(state_1.STATE.TEMPFRAME.BTN_PINE);
+            else
+                state_1.STATE.TEMPFRAME.DEL(state_1.STATE.TEMPFRAME.BTN_PINE);
+        },
     };
     root.registEvents = {
         EVENT_FRAME_DRAWING_TRIGGERED: root.EnableHostPointerEvent,
-        EVENT_FRAME_DRAWING_STOPPED: root.DisableHostPointerEvent
+        EVENT_FRAME_DRAWING_STOPPED: root.DisableHostPointerEvent,
+        EVENT_FRAME_RESIZE_TRIGGERED: root.EnableRootContainerFullScreen,
+        EVENT_FRAME_MOVE_BEGIN: root.EnableRootContainerFullScreen,
+        EVENT_FRAME_MOVE_END: root.DisableRootContainerFullScreen,
+        EVENT_FRAME_RESIZE_END: root.DisableRootContainerFullScreen,
     };
     mask.registEvents = {
         EVENT_NO_MASK: mask.HideMask,
@@ -1081,14 +1281,14 @@ var SetupCoreEventEmitter = function () {
         EVENT_FRAME_MOVE_BEGIN: tempframe.OnMoveBegin,
         EVENT_FRAME_MOVING: tempframe.OnMove,
         EVENT_FRAME_MOVE_END: tempframe.OnMoveEnd,
-        // mouse hover -> state triggered(初始条件具备)
-        // mousedown -> state begin
-        // mousemove -> state resizing
-        // mouseup -> state end
         EVENT_FRAME_MOUSE_HOVER: tempframe.OnMouseHover,
-        // EVENT_FRAME_RESIZE_BEGIN:tempframe.OnResizeBegin,//mousedown到这里 begin修改状态为begin
         EVENT_FRAME_RESIZING: tempframe.OnResizing,
         EVENT_FRAME_RESIZE_END: tempframe.OnResizeEnd,
+        EVENT_FRAME_SAVE_AS: tempframe.OnSave,
+        EVENT_FRAME_TOGGLE_FOLDBODY: tempframe.OnFoldBody,
+        EVENT_FRAME_TOGGLE_MINIMIZE: tempframe.OnMinimize,
+        EVENT_FRAME_TOGGLE_TOOLS: tempframe.OnOpenToolBox,
+        EVENT_FRAME_TOGGLE_PINE: tempframe.OnPine,
     };
 };
 exports.SetupCoreEventEmitter = SetupCoreEventEmitter;
@@ -1110,7 +1310,7 @@ exports.InstallCoreEventEmitter = InstallCoreEventEmitter;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ISDEBUG = exports.assetsDir = exports.extensionId = exports.TempFrameHeaderHeight = exports.TempFrameFooterHeight = exports.CSSClass = exports.extensionBaseName = void 0;
+exports.ISDEBUG = exports.assetsDir = exports.extensionId = exports.BTN_Red = exports.TempFrameHeaderHeight = exports.TempFrameFooterHeight = exports.CSSClass = exports.extensionBaseName = void 0;
 exports.extensionBaseName = "screen-card";
 function setClassName(list) {
     var emptydict = {};
@@ -1122,6 +1322,8 @@ function setClassName(list) {
 exports.CSSClass = {
     // noselect:`${extensionBaseName}-noselect`,
     // beGray:`${extensionBaseName}-begray`,
+    focus: "focus",
+    fullScreen: "fullScreen",
     crossCursor: "crossCursor",
     transitionAll: "transitionAll",
     button: "button",
@@ -1139,6 +1341,7 @@ exports.CSSClass = {
         toolbox: "toolbox",
     },
     tempFrameHeaderMoveBar: "tempFrameHeaderMoveBar",
+    tempFrameHeaderSide: "tempFrameHeaderSide",
     tempFrameBody: "tempFrameBody",
     tempFrame: "TempFrame",
     tempFrameFooter: "tempFrameFooter",
@@ -1151,6 +1354,7 @@ exports.CSSClass = {
 exports.CSSClass.tempFrameFooterButtons = setClassName(["screenCapture", "function", "filter", "annotGraph", "annotText", "annotFree", "zoomInOut", "drag", "linkCard", "tags", "share", "shutdown"]);
 exports.TempFrameFooterHeight = 30;
 exports.TempFrameHeaderHeight = 30;
+exports.BTN_Red = "#ff3333";
 exports.extensionId = "fhngaecmpobhnbjhglakokmnbghmnllk";
 exports.assetsDir = "/assets";
 exports.ISDEBUG = true;
@@ -1166,7 +1370,7 @@ exports.ISDEBUG = true;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.EVENT_FRAME_OUT_BUTTON = exports.EVENT_FRAME_AT_BUTTON = exports.EVENT_FRAME_RESIZE_END = exports.EVENT_FRAME_RESIZING = exports.EVENT_FRAME_RESIZE_BEGIN = exports.EVENT_FRAME_RESIZE_TRIGGERED = exports.EVENT_FRAME_MOUSE_HOVER = exports.EVENT_FRAME_MOVE_END = exports.EVENT_FRAME_MOVING = exports.EVENT_FRAME_MOVE_BEGIN = exports.EVENT_FRAME_SHOW = exports.EVENT_FRAME_HIDE = exports.EVENT_INFOMATION = exports.EVENT_FRAME_DRAWING_FAIELD = exports.EVENT_FRAME_DRAWING_SUCCESS = exports.EVENT_FRAME_DRAWING_STOPPED = exports.EVENT_FRAME_DRAWING_MOVING = exports.EVENT_FRAME_DRAWING_SATRTED = exports.EVENT_FRAME_DRAWING_TRIGGERED = exports.EVENT_NO_MASK = exports.EVENT_NEED_MASK = exports.EVENT_TEMPFRAME_REMOVED = exports.EVENT_TEMPFRAME_APPENDED = void 0;
+exports.EVENT_FRAME_SET_TITLE = exports.EVENT_FRAME_SAVE_AS = exports.EVENT_FRAME_TOGGLE_PINE = exports.EVENT_FRAME_TOGGLE_TOOLS = exports.EVENT_FRAME_TOGGLE_MINIMIZE = exports.EVENT_FRAME_TOGGLE_FOLDBODY = exports.EVENT_MOUSE_LBTN_RELEASED = exports.EVENT_MOUSE_LBTN_PRESSED = exports.EVENT_FRAME_OUT_BUTTON = exports.EVENT_FRAME_AT_BUTTON = exports.EVENT_FRAME_RESIZE_END = exports.EVENT_FRAME_RESIZING = exports.EVENT_FRAME_RESIZE_BEGIN = exports.EVENT_FRAME_RESIZE_TRIGGERED = exports.EVENT_FRAME_MOUSE_HOVER = exports.EVENT_FRAME_MOVE_END = exports.EVENT_FRAME_MOVING = exports.EVENT_FRAME_MOVE_BEGIN = exports.EVENT_FRAME_SHOW = exports.EVENT_FRAME_HIDE = exports.EVENT_INFOMATION = exports.EVENT_FRAME_DRAWING_FAIELD = exports.EVENT_FRAME_DRAWING_SUCCESS = exports.EVENT_FRAME_DRAWING_STOPPED = exports.EVENT_FRAME_DRAWING_MOVING = exports.EVENT_FRAME_DRAWING_SATRTED = exports.EVENT_FRAME_DRAWING_TRIGGERED = exports.EVENT_NO_MASK = exports.EVENT_NEED_MASK = exports.EVENT_TEMPFRAME_REMOVED = exports.EVENT_TEMPFRAME_APPENDED = void 0;
 exports.EVENT_TEMPFRAME_APPENDED = "EVENT_TEMPFRAME_APPENDED";
 exports.EVENT_TEMPFRAME_REMOVED = "EVENT_TEMPFRAME_REMOVED";
 exports.EVENT_NEED_MASK = "EVENT_NEED_MASK";
@@ -1190,6 +1394,14 @@ exports.EVENT_FRAME_RESIZING = "EVENT_FRAME_RESIZING";
 exports.EVENT_FRAME_RESIZE_END = "EVENT_FRAME_RESIZE_END";
 exports.EVENT_FRAME_AT_BUTTON = "EVENT_FRAME_AT_BUTTON";
 exports.EVENT_FRAME_OUT_BUTTON = "EVENT_FRAME_OUT_BUTTON";
+exports.EVENT_MOUSE_LBTN_PRESSED = "EVENT_MOUSE_LBTN_PRESSED";
+exports.EVENT_MOUSE_LBTN_RELEASED = "EVENT_MOUSE_LBTN_RELEASED";
+exports.EVENT_FRAME_TOGGLE_FOLDBODY = "EVENT_FRAME_TOGGLE_FOLDBODY";
+exports.EVENT_FRAME_TOGGLE_MINIMIZE = "EVENT_FRAME_TOGGLE_MINIMIZE";
+exports.EVENT_FRAME_TOGGLE_TOOLS = "EVENT_FRAME_TOGGLE_TOOLS";
+exports.EVENT_FRAME_TOGGLE_PINE = "EVENT_FRAME_PINE";
+exports.EVENT_FRAME_SAVE_AS = "EVENT_FRAME_SAVE_AS";
+exports.EVENT_FRAME_SET_TITLE = "EVENT_FRAME_SET_TITLE";
 // export  const EVENTS = {
 //     SELECTION_START: 'SELECTION_START',
 //     SELECTION_SUCCESS:"SELECTION_SUCCESS",
@@ -1226,10 +1438,9 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TargetIs = exports.shadowEl = exports.BHas = exports.setElStyle = exports.HideElementInShadowRoot = exports.ShowElementInShadowRoot = exports.consolelog = exports.Dispatch = exports.UninstallEvent = exports.InstallEvent = exports.MakeIconClass = exports.RemoveMaskFromBody = exports.AppendMaskToBody = exports.CursorAtEdge = exports.SwitchFixedToAbsolute = exports.SwitchAbsoluteToFixed = exports.SetElemetCenter = void 0;
+exports.RemoveChildren = exports.AppendChildren = exports.HasClass = exports.TargetIs = exports.shadowEl = exports.BHas = exports.setElStyle = exports.HideElementInShadowRoot = exports.ShowElementInShadowRoot = exports.consolelog = exports.Dispatch = exports.UninstallEvent = exports.InstallEvent = exports.MakeIconClass = exports.RemoveMaskFromBody = exports.AppendMaskToBody = exports.CursorAtEdge = exports.SwitchFixedToAbsolute = exports.SwitchAbsoluteToFixed = exports.SetElemetCenter = void 0;
 var constants_1 = __webpack_require__(/*! ./constants */ "./src/utils/constants.js");
 var core_1 = __webpack_require__(/*! ../core */ "./src/core.js");
-var EVENTS = __webpack_require__(/*! ./events */ "./src/utils/events.js");
 function SetElemetCenter(element, x, y) {
 }
 exports.SetElemetCenter = SetElemetCenter;
@@ -1278,16 +1489,14 @@ var EventInstalledAt = {};
  * 根据地址注册事件, 并且会记录所在位置, 方便后续的卸载与分发事件
  * */
 function InstallEvent(e, place) {
-    if (place === void 0) { place = document.body; }
+    if (place === void 0) { place = window; }
     Object.keys(e).map(function (key) {
         place.addEventListener(key, function (x) {
-            e[key](x);
-            consolelog("from event = ".concat(key, ", emitter=").concat(e[key]));
+            e[key.toString()](x);
         });
         if (!EventInstalledAt[key])
             EventInstalledAt[key] = new Set();
         EventInstalledAt[key].add(place);
-        consolelog("installed event ".concat(key, ", emitter = ").concat(e[key]));
     });
 }
 exports.InstallEvent = InstallEvent;
@@ -1317,22 +1526,28 @@ function Dispatch(eventName, detail, place) {
 }
 exports.Dispatch = Dispatch;
 function consolelog(a) {
-    var filter = __spreadArray(["mouseup", "mousemove"], Object.values(EVENTS), true);
+    var filter = ["event"]; //["mouseup","mousemove",...Object.values(EVENTS)]
     if (constants_1.ISDEBUG) {
         if (filter.some(function (e) { return a.search(e) != -1; }))
             return;
-        console.log(a);
+        console.log((new Date()).toLocaleString() + "---" + a);
     }
 }
 exports.consolelog = consolelog;
-function ShowElementInShadowRoot(element) {
-    if (!core_1.CORE.ShadowRoot.contains(element))
-        core_1.CORE.ShadowRoot.appendChild(element);
+function ShowElementInShadowRoot() {
+    var elements = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        elements[_i] = arguments[_i];
+    }
+    exports.AppendChildren.apply(void 0, __spreadArray([core_1.CORE.ShadowRoot], elements, false));
 }
 exports.ShowElementInShadowRoot = ShowElementInShadowRoot;
-function HideElementInShadowRoot(element) {
-    if (core_1.CORE.ShadowRoot.contains(element))
-        core_1.CORE.ShadowRoot.removeChild(element);
+function HideElementInShadowRoot() {
+    var elements = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        elements[_i] = arguments[_i];
+    }
+    exports.RemoveChildren.apply(void 0, __spreadArray([core_1.CORE.ShadowRoot], elements, false));
 }
 exports.HideElementInShadowRoot = HideElementInShadowRoot;
 function setElStyle(element, style) {
@@ -1357,15 +1572,51 @@ exports.TargetIs = {
     tempframe: null,
     tempframeComponent: null,
     tempframeContainer: null,
-    tempframeHeader: function (target) { return shadowEl("." + constants_1.CSSClass.tempFrameHeader) == target; },
-    tempframeHeaderButtons: function (target) {
-        return exports.TargetIs.tempframeHeader(target.parentElement) && target.classList.contains(constants_1.CSSClass.button);
+    tempframeHeader: function (target) {
+        return shadowEl("." + constants_1.CSSClass.tempFrameHeader) == target;
     },
-    tempFrameFooter: function (target) { return shadowEl("." + constants_1.CSSClass.tempFrameFooter) == target; },
+    tempFrameHeaderMoveBar: function (target) {
+        return target.classList.contains(constants_1.CSSClass.tempFrameHeaderMoveBar);
+    },
+    tempframeHeaderButtons: function (target) {
+        return exports.TargetIs.tempframeHeader(target.parentElement.parentElement) && target.classList.contains(constants_1.CSSClass.button);
+    },
+    tempframeHeaderTitle: function (target) {
+        return exports.TargetIs.tempframeHeader(target.parentElement) && target.classList.contains(constants_1.CSSClass.tempFrameHeaderButtons.title);
+    },
+    tempFrameFooter: function (target) {
+        return shadowEl("." + constants_1.CSSClass.tempFrameFooter) == target;
+    },
     tempframeFooterButtons: function (target) {
         return exports.TargetIs.tempFrameFooter(target.parentElement) && target.classList.contains(constants_1.CSSClass.button);
     },
 };
+var HasClass = function (e, s) {
+    return e.className.indexOf(s) >= 0;
+};
+exports.HasClass = HasClass;
+var AppendChildren = function (parent) {
+    var children = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        children[_i - 1] = arguments[_i];
+    }
+    children.map(function (el) {
+        if (!parent.contains(el))
+            parent.appendChild(el);
+    });
+};
+exports.AppendChildren = AppendChildren;
+var RemoveChildren = function (parent) {
+    var children = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        children[_i - 1] = arguments[_i];
+    }
+    children.map(function (el) {
+        if (parent.contains(el))
+            parent.removeChild(el);
+    });
+};
+exports.RemoveChildren = RemoveChildren;
 //# sourceMappingURL=funcTools.js.map
 
 /***/ }),
@@ -1388,10 +1639,10 @@ exports.styles_sheet = {
 };
 exports.styles_sheet.default[constants_1.CSSClass.ShadowRootHost] = "\nposition: absolute;\nleft: 0;\ntop:0;\npointer-events: none;\nuser-select: none;\nwidth:100%;\nheight:".concat(document.scrollingElement.scrollHeight, "px;\nz-index:99999;\n");
 exports.styles_sheet.default[constants_1.CSSClass.crossCursor] = "cursor: crosshair;";
-exports.styles_sheet.default[constants_1.CSSClass.button] = "\nbackground-size:100% 100%;\nbackground-repeat:no-repeat;\ntransition:all 200ms;\n";
-exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeader, " > div,.").concat(constants_1.CSSClass.tempFrameFooter, " > div")] = "\nborder-radius: 4px;\npadding:3px;\n";
-exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeader, " > div:hover,.").concat(constants_1.CSSClass.tempFrameFooter, " > div:hover")] = "\nbox-shadow: 4px 4px 4px #494949;\n";
-exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeader, " > div:active, .").concat(constants_1.CSSClass.tempFrameFooter, " > div:active")] = "\nbackground-color: #ff3333;\n";
+exports.styles_sheet.default[constants_1.CSSClass.button] = "\nbackground-size:100% 100%;\nbackground-repeat:no-repeat;\ntransition:all 200ms;\nwidth:20px;\nheight:20px;\n";
+exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeaderSide, " > div,.").concat(constants_1.CSSClass.tempFrameFooter, " > div")] = "\nborder-radius: 4px;\npadding:3px;\n";
+exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeaderSide, " > div:hover,.").concat(constants_1.CSSClass.tempFrameFooter, " > div:hover")] = "\nbox-shadow: 4px 4px 4px #494949;\n";
+exports.styles_sheet.other[".".concat(constants_1.CSSClass.tempFrameHeaderSide, " > div:active, .").concat(constants_1.CSSClass.tempFrameFooter, " > div:active")] = "\nbackground-color: ".concat(constants_1.BTN_Red, ";\n");
 for (var keyname in constants_1.CSSClass.tempFrameHeaderButtons) {
     var iconpath = chrome.runtime.getURL("".concat(constants_1.assetsDir, "/").concat(keyname, ".png"));
     if (keyname == "title") {
@@ -1404,14 +1655,17 @@ for (var keyname in constants_1.CSSClass.tempFrameHeaderButtons) {
 exports.styles_sheet.buttonIcons = Object.assign({}, exports.styles_sheet.buttonIcons, (0, funcTools_1.MakeIconClass)(constants_1.CSSClass.tempFrameFooterButtons));
 exports.styles_sheet.default[constants_1.CSSClass.selectionFrameDiv] = "\nposition: absolute;\nborder:1px dotted;\ndisplay:block;\n";
 exports.styles_sheet.default[constants_1.CSSClass.blockActionMask] = "\nposition: absolute;\nleft: 0;\ntop: 0;\nwidth: 100%;\nbackground-color:red;\nopacity: 0.8;\n ";
-exports.styles_sheet.default[constants_1.CSSClass.divForBlockMouse] = "\nposition: absolute;\nleft:50%;\ntop:3px;\ntransform:translate(-50%,0)\nwidth: 20px;\nheight: 20px;\nborder:1px dotted;\ncursor:crosshair;\n";
-exports.styles_sheet.default[constants_1.CSSClass.tempFrameHeaderMoveBar] = "\n        position: absolute;\n        left:50%;\n        top:3px;\n        width:30%;\n        max-width:150px;\n        height:50%;\n        max-height:20px;\n        background-color:white;\n        opacity: 0.5;\n        border-radius:3px;\n        box-shadow: 1px 1px 1px;\n        cursor:all-scroll;\n        transform:translate(-50%,0);\n";
+//一个小方框
+exports.styles_sheet.default[constants_1.CSSClass.divForBlockMouse] = "\nposition: absolute;\ntransform:translate(-50%,-50%);\nwidth: 20px;\nheight: 20px;\nborder:1px dotted;\ncursor:crosshair;\n";
+exports.styles_sheet.default[constants_1.CSSClass.tempFrameHeaderMoveBar] = "\nposition: absolute;\nleft:50%;\ntop:3px;\nwidth:30%;\nmax-width:150px;\nheight:50%;\nmax-height:20px;\nbackground-color:white;\nopacity: 0.5;\nborder-radius:3px;\nbox-shadow: 1px 1px 1px;\ncursor:all-scroll;\ntransform:translate(-50%,0);\n";
 exports.styles_sheet.default[constants_1.CSSClass.tempFrameContainer] = "\nwidth:100%;\nheight:100%;\ndisplay:grid;\ngrid-template-columns: 100%;\ngrid-template-rows: min-content auto min-content; \n";
 exports.styles_sheet.default[constants_1.CSSClass.TempFrameComponent] = "\nposition:absolute;\nborder-radius: 4px;\nbox-shadow: 1px 1px 10px #000000b0;\noverflow:hidden;\n";
-exports.styles_sheet.default[constants_1.CSSClass.tempFrameHeader] = "\ndisplay:grid;\nheight:".concat(constants_1.TempFrameHeaderHeight, "px;\ngrid-template-rows:").concat(constants_1.TempFrameHeaderHeight, "px;\nbackground-image:linear-gradient(#a6e3f5,#81bae0);\n");
-exports.styles_sheet.default[constants_1.CSSClass.tempFrameFooter] = "\nbackground-image:linear-gradient(#a6e3f5,#81bae0);\ndisplay:grid;\njustify-content: center;\ngrid-gap: 2px;\ngrid-template-columns: repeat(auto-fit,30px);\nheight:".concat(constants_1.TempFrameFooterHeight, "px;\ngrid-template-rows:").concat(constants_1.TempFrameFooterHeight, "px;\n");
+exports.styles_sheet.default[constants_1.CSSClass.tempFrameHeader] = "\ndisplay:grid;\nheight:".concat(constants_1.TempFrameHeaderHeight, "px;\nalign-items:center;\njustify-content: space-between;\ngrid-template-rows:").concat(constants_1.TempFrameHeaderHeight, "px;\ngrid-template-columns: min-content max-content min-content;\nbackground-image:linear-gradient(#a6e3f5,#81bae0);\n");
+exports.styles_sheet.default[constants_1.CSSClass.tempFrameFooter] = "\nbackground-image:linear-gradient(#a6e3f5,#81bae0);\ndisplay:grid;\njustify-content: center;\nalign-items: center;\ngrid-gap: 2px;\ngrid-template-columns: repeat(auto-fit,30px);\nheight:".concat(constants_1.TempFrameFooterHeight, "px;\ngrid-template-rows:").concat(constants_1.TempFrameFooterHeight, "px;\n");
 exports.styles_sheet.default[constants_1.CSSClass.ShadowRootContainer] = "\npointer-events:all;\n";
 exports.styles_sheet.default[constants_1.CSSClass.transitionAll] = "\ntransition:all 100ms;\n";
+exports.styles_sheet.default[constants_1.CSSClass.fullScreen] = "\nposition:absolute;\nwidth:100%;\nheight:100%;\nleft:0px;\ntop:0px;\n";
+exports.styles_sheet.default[constants_1.CSSClass.tempFrameHeaderSide] = "\ndisplay: grid;\ngrid-template-rows:30px;\ngrid-template-columns: repeat(3,".concat(constants_1.TempFrameFooterHeight, "px);\nalign-items: center;\nheight:").concat(constants_1.TempFrameFooterHeight, "px;\ngrid-gap: 2px;\n");
 //# sourceMappingURL=styles_sheet.js.map
 
 /***/ })
@@ -1453,15 +1707,19 @@ var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 var core_1 = __webpack_require__(/*! ./core */ "./src/core.js");
-var test_1 = __webpack_require__(/*! ./test */ "./src/test.js");
+var funcTools_1 = __webpack_require__(/*! ./utils/funcTools */ "./src/utils/funcTools.js");
 console.log("injection 文件已经加载");
-window.onload = function () {
-    core_1.CORE.InstallStyles();
-    core_1.CORE.InstallDisptach();
-    core_1.CORE.InstallEvents();
-    (0, test_1.test)();
-    // CORE.ShadowRootService
-};
+core_1.CORE.InstallStyles();
+core_1.CORE.InstallDisptach();
+core_1.CORE.InstallEvents();
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    console.log(sender.tab ?
+        "from a content script:" + sender.tab.url :
+        "from the extension");
+    if (message.EVENT == "EVENT_FRAME_DRAWING_TRIGGERED" && core_1.CORE.STATE.FRAME_DRAWING.IsBasicState()) {
+        (0, funcTools_1.Dispatch)(message.EVENT);
+    }
+});
 //# sourceMappingURL=injection.js.map
 })();
 

@@ -11,6 +11,8 @@ function setClassName(list:string[]):object{
 export  const CSSClass={
     // noselect:`${extensionBaseName}-noselect`,
     // beGray:`${extensionBaseName}-begray`,
+    focus:"focus",
+    fullScreen:"fullScreen",
     crossCursor:`crossCursor`,
     transitionAll:"transitionAll",
     button:`button`,
@@ -28,6 +30,7 @@ export  const CSSClass={
                     toolbox:`toolbox`,
                 },
                     tempFrameHeaderMoveBar:"tempFrameHeaderMoveBar",
+                    tempFrameHeaderSide:"tempFrameHeaderSide",
                 tempFrameBody:"tempFrameBody",
                     tempFrame:"TempFrame",
                 tempFrameFooter:`tempFrameFooter`,
@@ -45,6 +48,8 @@ CSSClass.tempFrameFooterButtons=setClassName(
 export const TempFrameFooterHeight=30
 
 export const TempFrameHeaderHeight=30
+
+export const BTN_Red = "#ff3333"
 
 export  const extensionId="fhngaecmpobhnbjhglakokmnbghmnllk"
 export const assetsDir = `/assets`

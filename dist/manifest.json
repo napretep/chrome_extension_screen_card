@@ -1,28 +1,24 @@
 {
-    "name": "screen card2",
+    "name": "Screen Card",
     "description": "  ",
     "version": "1.0",
     "manifest_version": 3,
     "action": {
         "default_popup": "index.html",
-        "default_icon": {
-            "16":"fable.png",
-            "32":"fable.png"
-        }
+        "default_icon": "/img/sc.png"
+
     },
 
-    "content_scripts": [
-        {
-            "matches": ["http://*/*","https://*/*"],
-            "js": ["injection.js"]
-        }
-    ],
+    "content_scripts": [{
+        "matches": ["http://*/*", "https://*/*"],
+        "js": ["injection.js"]
+    }],
     "permissions": [
-        "tabs",  "activeTab"
+        "tabs", "activeTab"
     ],
     "web_accessible_resources": [{
-  "resources": ["/assets/*"],
-  "matches": ["<all_urls>"]
-}]
+        "resources": ["/assets/*", "/img/", "iconfont"],
+        "matches": ["<all_urls>"]
+    }]
 
 }

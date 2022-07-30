@@ -19,22 +19,29 @@ export class TempFrameComponent extends Component{
         this.component.appendChild(this.container)
         this.component.classList.add(CSSClass.TempFrameComponent,CSSClass.transitionAll)
     }
-    public UpdateGeometry=(el:IRect)=>{
-        // let r = this.WrapFrameRect(el)
+    public UpdateGeometry=(elRect:IRect)=>{
         let r2:Style = {}
-        for(let key in el){
-            if (el[key])r2[key]=`${el[key]}px`
+        if(this.IsAbsolutePosition){
+            elRect.left += window.scrollX
+            elRect.top +=window.scrollY
+        }
+        console.log(`UpdateGeometry elRect=`,elRect)
+        for(let key in elRect){
+            if (elRect[key])r2[key]=`${elRect[key]}px`
         }
         setElStyle(this.component,r2)
     }
-
+    public get IsAbsolutePosition(){
+        let p = window.getComputedStyle(this.component).position
+        return p?p=="absolute":true
+    }
     public WrapFrameRect(elRect:IRect){
 
         let headerHeight = this._container.headerHeight>0?this._container.headerHeight:TempFrameHeaderHeight
         let footerHeight = this._container.footerHeight>0?this._container.footerHeight:TempFrameFooterHeight
         let rect:IRect ={
-            left: window.scrollX + elRect.left,
-            top:window.scrollY+elRect.top-headerHeight,
+            left:elRect.left,
+            top:elRect.top-headerHeight,
             width:elRect.width,
             height:elRect.height+headerHeight+footerHeight
         }

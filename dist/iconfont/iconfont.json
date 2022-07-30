@@ -1,0 +1,58 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "2076270",
+      "name": "设置",
+      "font_class": "shezhi",
+      "unicode": "e892",
+      "unicode_decimal": 59538
+    },
+    {
+      "icon_id": "4320335",
+      "name": "登录",
+      "font_class": "denglu",
+      "unicode": "e653",
+      "unicode_decimal": 58963
+    },
+    {
+      "icon_id": "6352500",
+      "name": "版本号",
+      "font_class": "banbenhao",
+      "unicode": "e672",
+      "unicode_decimal": 58994
+    },
+    {
+      "icon_id": "7617412",
+      "name": "截屏",
+      "font_class": "jieping",
+      "unicode": "e628",
+      "unicode_decimal": 58920
+    },
+    {
+      "icon_id": "9909272",
+      "name": "3-3缓存管理",
+      "font_class": "-huancunguanli",
+      "unicode": "e64e",
+      "unicode_decimal": 58958
+    },
+    {
+      "icon_id": "19992657",
+      "name": "视图-卡片列表",
+      "font_class": "shitu-kapianliebiao",
+      "unicode": "e814",
+      "unicode_decimal": 59412
+    },
+    {
+      "icon_id": "25555558",
+      "name": "打开多选",
+      "font_class": "library_add_check-o",
+      "unicode": "e734",
+      "unicode_decimal": 59188
+    }
+  ]
+}
